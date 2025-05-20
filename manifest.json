@@ -1,0 +1,9 @@
+{
+    "manifest_version": 2,
+    "name": "TickBack",
+    "version": "0.1",
+    "description": "Simple browser add-on for GitHub to add tasks count on the issues page",
+    "icons": {
+        "48": "icon.png"
+    }
+}
