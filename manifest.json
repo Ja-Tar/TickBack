@@ -4,6 +4,8 @@
     "version": "0.1",
     "description": "Simple browser add-on for GitHub to add tasks count on the issues page",
     "icons": {
-        "48": "icon.png"
+        "32": "icon.svg",
+        "64": "icon.svg",
+        "128": "icon.svg"
     }
 }
