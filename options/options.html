@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Options</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        #login-options {
+            margin-top: 20px;
+        }
+
+        input[type="radio"] {
+            margin-right: 10px;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 10px 15px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        input[type="text"] {
+            width: 300px;
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        input[type="text"]:focus {
+            border-color: #007BFF;
+            outline: none;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        
+        .disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .disabled:hover {
+            background-color: #ccc;
+        }
+        
+        #error-message {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Options</h1>
+    <div id="login-options">
+        <input type="radio" id="personal-access-token" value="PAC" name="login-option" checked>
+        <label for="personal-access-token">Use Personal Access Token</label><br>
+        <input type="text" id="token" name="token" placeholder="Enter your token here"><br><br>
+        <!-- TODO: Implement OAuth login
+        <input type="radio" id="oauth" value="OAuth" name="login-option">
+        <label for="oauth">Login with GitHub</label><br>
+        <button id="login-button" class="disabled">Login with GitHub</button>
+        -->
+    </div>
+    <div id="error-message" class="error"></div>
+    <script src="options.js"></script>
+</body>
+
+</html>

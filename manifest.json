@@ -16,5 +16,8 @@
     ],
     "host_permissions": [
         "https://github.com/*/*/issues"
-    ]
+    ],
+    "options_ui": {
+        "page": "options/options.html"
+    }
 }
