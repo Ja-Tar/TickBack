@@ -1,13 +1,22 @@
+// Save token to storage
+document.getElementById("save-token").addEventListener("click", function() {
+    const token = document.getElementById("token").value;
+    if (token) {
+        browser.storage.local.set({ token: token }, function() {
+            showMessage(0, "Token saved successfully.");
+        });
+    } else {
+        showMessage(1, "Please enter a valid token.");
+    }
+});
 
-// REMOVE: When ready
-// document.getElementById('personal-access-token').addEventListener('change', function () {
-//     document.getElementById('token').classList.toggle('disabled', !this.checked);
-//     document.getElementById('token').toggleAttribute('disabled', !this.checked);
-//     document.getElementById('login-button').classList.toggle('disabled', this.checked);
-// });
-// document.getElementById('oauth').addEventListener('change', function () {
-//     document.getElementById('token').classList.toggle('disabled', this.checked);
-//     document.getElementById('token').toggleAttribute('disabled', this.checked);
-//     document.getElementById('login-button').classList.toggle('disabled', !this.checked);
-// });
-
+// Show message function
+function showMessage(type, message) {
+    const messageElement = document.getElementById("message");
+    messageElement.textContent = message;
+    messageElement.className = type === 0 ? "success" : "error";
+    setTimeout(() => {
+        messageElement.textContent = "";
+        messageElement.className = "";
+    }, 3000);
+}

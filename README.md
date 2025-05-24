@@ -12,4 +12,3 @@ Simple browser add-on for GitHub to add back the tasks count on issues page.
     - [ ] All
 - [ ] Login with
     - [ ] Personal Access Token
-    - [ ] OAuth
