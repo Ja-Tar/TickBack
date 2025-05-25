@@ -1,7 +1,10 @@
 // Background script
 
 browser.runtime.onInstalled.addListener(function() {
-    return // REMOVE
     console.log("TickBack extension installed");
-    browser.runtime.openOptionsPage();
+    browser.storage.local.get('token').then((result) => {
+        if (!result.token) {
+            browser.runtime.openOptionsPage();
+        }
+    });
 });
