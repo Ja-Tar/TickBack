@@ -222,7 +222,19 @@ async function fetchIssues() {
 }
 
 if (document.location.pathname.endsWith('/issues') || document.location.pathname.endsWith('/issues/')) {
-    fetchIssues();
+    setTimeout(() => {
+        fetchIssues();
+    }, 1000);
+}
+
+let match = document.location.pathname.match(/\/issues\/(\d+)\/?$/);
+
+// match "/issue/12" and "/issue/12/"
+if (match) {
+    const issueNumber = match[1];
+    console.log(`Issue number found: ${issueNumber}`);
+
+    //fetchIssue();
 }
 
 // Check for GitHub progress bar removal
