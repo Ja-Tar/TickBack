@@ -221,29 +221,30 @@ async function fetchIssues() {
     });
 }
 
-// Monitoring the document.location object
-
-let lastURL = document.location.href;
-
-function checkURLChange() {
-  var currentURL = document.location.href;
-  if (currentURL !== lastURL) {
-    console.log("URL changed to: " + currentURL);
-    // wait for the page to load
-    if (document.location.pathname.includes('/issues/')) {
-        console.log("Issue page detected");
-
-    } else if (document.location.pathname.includes('/issues')) {
-        setTimeout(function() {
-            fetchIssues();
-        }, 1000);
-    }
-    lastURL = currentURL;
-  }
-}
-
-if (document.location.pathname.includes('/issues')) {
+if (document.location.pathname.endsWith('/issues') || document.location.pathname.endsWith('/issues/')) {
     fetchIssues();
 }
 
-setInterval(checkURLChange, 1000); // 1s
+// Check for GitHub progress bar removal
+
+var observer = new MutationObserver(function (mutations) {
+    mutations.forEach(function (mutation) {
+        if (mutation.target.nodeName === 'HTML' && mutation.type === 'childList') {
+            // console.log('HTML changed', mutation);
+            // div.turbo-progress-bar
+            if (mutation.removedNodes[0] && mutation.removedNodes[0].classList.contains('turbo-progress-bar')) {
+                console.log('Turbo progress bar removed');
+                if (document.location.pathname.endsWith('/issues') || document.location.pathname.endsWith('/issues/')) {
+                    fetchIssues();
+                }
+            }
+        }
+    });
+});
+
+observer.observe(document, {
+    attributes: true,
+    childList: true,
+    subtree: true,
+    characterData: true
+});
