@@ -10,6 +10,13 @@ document.getElementById("save-token").addEventListener("click", function() {
     }
 });
 
+document.getElementById("get-token").addEventListener("click", function() {
+    // open new tab to github token page
+    browser.tabs.create({
+        url: "https://github.com/settings/tokens/new?description=TickBack&scopes=repo&default_expires_at=none"
+    });
+});
+
 // Show message function
 function showMessage(type, message) {
     const messageElement = document.getElementById("message");

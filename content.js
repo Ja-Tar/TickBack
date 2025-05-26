@@ -1,5 +1,8 @@
 // Main script
 
+let lastRateLimitRemaining = null;
+let lastRateLimitReset = null;
+
 async function getDataFromAPI(
     token,
     owner = 'Ja-Tar',
@@ -7,6 +10,17 @@ async function getDataFromAPI(
     filterBy = ['states: OPEN'],
     orderBy = ['CREATED_AT', 'DESC']
 ) {
+    // Stop if rate limit is reached
+    if (lastRateLimitRemaining !== null && lastRateLimitRemaining <= 5) {
+        const resetTime = new Date(lastRateLimitReset * 1000);
+        if (resetTime <= new Date()) {
+            console.warn('Rate limit reached, but reset time has passed. Fetching data...');
+        } else {
+            console.warn('Rate limit reached, waiting for reset time...');
+            return [];
+        }
+    }
+
     try {
         const response = await fetch('https://api.github.com/graphql', {
             method: 'POST',
@@ -37,6 +51,16 @@ async function getDataFromAPI(
 
         if (!response.ok) {
             throw new Error('Network response was not ok');
+        }
+
+        // Check for rate limit headers
+        const rateLimitRemaining = response.headers.get('X-RateLimit-Remaining');
+        const rateLimitReset = response.headers.get('X-RateLimit-Reset');
+
+        if (rateLimitRemaining !== null && rateLimitReset !== null) {
+            lastRateLimitRemaining = parseInt(rateLimitRemaining, 10);
+            lastRateLimitReset = parseInt(rateLimitReset, 10);
+            console.log(`Rate limit remaining: ${lastRateLimitRemaining}`);
         }
 
         const data = await response.json();
@@ -101,11 +125,9 @@ function processIssues(issues) {
         const completedTaskCount = (issue.body.match(/- \[x\]/g) || []).length;
         const allTaskCount = openTaskCount + completedTaskCount;
         if (allTaskCount === 0) {
-            console.log(`Issue: ${issue.number} - No tasks found`);
             continue;
         }
         const progress = (completedTaskCount / allTaskCount) * 100;
-        console.log(`Issue: ${issue.number} - tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
         processedIssues[issue.number] = { allTaskCount, completedTaskCount, progress };
     }
     return processedIssues;
@@ -123,7 +145,7 @@ function processWebIssues(apiData) {
         const apiIssueData = apiData[parseInt(issueNumber, 10)];
 
         if (!apiIssueData) {
-            console.warn(`No API data found for issue number: ${issueNumber}`);
+            console.warn(`No API data for: ${issueNumber}`);
             return;
         }
 
@@ -148,12 +170,27 @@ function processWebIssues(apiData) {
 
         const counterText = document.createElement("span");
         counterText.innerHTML = `${completedTaskCount} / ${allTaskCount}`;
-        counterText.style.margin = "0 8px";
+        counterText.style.marginRight = "8px";
         counterText.style.fontSize = "var(--text-body-size-small,.75rem)";
         counterText.style.lineHeight = "20px";
         counterText.style.fontWeight = "var(--base-text-weight-semibold,600)";
 
+        const svgDiv = document.createElement("div");
+        svgDiv.style.display = "inline-block";
+        svgDiv.style.width = "13px";
+        svgDiv.style.height = "13px";
+        svgDiv.style.verticalAlign = "sub";
+        svgDiv.style.marginRight = "5px";
+        svgDiv.style.marginLeft = "3px";
 
+        const strokeDashoffset = ((100 - progress) / 100) * 50.28; // 50.28 is the circumference of the circle with radius 8
+
+        svgDiv.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" style="transform: rotate(-90deg)">
+            <circle r="8" cx="10" cy="10" fill="transparent" stroke="#444c56" stroke-width="3px"></circle>
+            <circle r="8" cx="10" cy="10" stroke="#52ec53" stroke-width="3px" stroke-linecap="round" stroke-dashoffset="${strokeDashoffset}px" fill="transparent" stroke-dasharray="50.28px"></circle>
+        </svg>`;
+
+        counterBorder.appendChild(svgDiv);
         counterBorder.appendChild(counterText);
         counterDiv.appendChild(counterBorder);
         trailingBadgesContainer.prepend(counterDiv);
@@ -184,4 +221,29 @@ async function fetchIssues() {
     });
 }
 
-fetchIssues();
+// Monitoring the document.location object
+
+let lastURL = document.location.href;
+
+function checkURLChange() {
+  var currentURL = document.location.href;
+  if (currentURL !== lastURL) {
+    console.log("URL changed to: " + currentURL);
+    // wait for the page to load
+    if (document.location.pathname.includes('/issues/')) {
+        console.log("Issue page detected");
+
+    } else if (document.location.pathname.includes('/issues')) {
+        setTimeout(function() {
+            fetchIssues();
+        }, 1000);
+    }
+    lastURL = currentURL;
+  }
+}
+
+if (document.location.pathname.includes('/issues')) {
+    fetchIssues();
+}
+
+setInterval(checkURLChange, 1000); // 1s

@@ -10,7 +10,8 @@
     },
     "content_scripts": [
         {
-            "matches": ["https://github.com/*/*/issues"],
+            "matches": ["https://github.com/*/*"],
+            "run_at": "document_end",
             "js": ["content.js"]
         }
     ],
@@ -18,7 +19,7 @@
         "scripts": ["background.js"]
     },
     "host_permissions": [
-        "https://github.com/*/*/issues"
+        "https://github.com/*/*"
     ],
     "options_ui": {
         "page": "options/options.html"
