@@ -3,7 +3,7 @@
 let lastRateLimitRemaining = null;
 let lastRateLimitReset = null;
 
-async function getDataFromAPI(
+async function getApiIssues(
     token,
     owner = 'Ja-Tar',
     repo = 'TickBack',
@@ -73,6 +73,54 @@ async function getDataFromAPI(
     }
 }
 
+async function getSingleApiIssue(
+    token,
+    owner = 'Ja-Tar',
+    repo = 'TickBack',
+    issueNumber
+) {
+    // Stop if rate limit is reached
+    if (lastRateLimitRemaining !== null && lastRateLimitRemaining <= 5) {
+        const resetTime = new Date(lastRateLimitReset * 1000);
+        if (resetTime <= new Date()) {
+            console.warn('Rate limit reached, but reset time has passed. Fetching data...');
+        } else {
+            console.warn('Rate limit reached, waiting for reset time...');
+            return [];
+        }
+    }
+
+    try {
+        const response = await fetch('https://api.github.com/graphql', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                query: `
+                    query repository {
+                        repository(owner: "${owner}", name: "${repo}") {
+                            issue(number: ${issueNumber}) {
+                                body
+                            }
+                        }
+                    }
+                `
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+
+        const data = await response.json();
+        return data.data.repository.issue;
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
 function getRepInfo() {
     const url = document.location.href;
     const match = url.match(/github\.com\/([^/]+)\/([^/]+)/);
@@ -121,16 +169,25 @@ function processIssues(issues) {
     let processedIssues = {};
     for (let i = 0; i < issues.length; i++) {
         const issue = issues[i];
-        const openTaskCount = (issue.body.match(/- \[ \]/g) || []).length;
-        const completedTaskCount = (issue.body.match(/- \[x\]/g) || []).length;
-        const allTaskCount = openTaskCount + completedTaskCount;
-        if (allTaskCount === 0) {
+        const processedData = processSingleIssue(issue, issue.number);
+        if (!processedData) {
             continue;
         }
-        const progress = (completedTaskCount / allTaskCount) * 100;
-        processedIssues[issue.number] = { allTaskCount, completedTaskCount, progress };
+        processedIssues[issue.number] = processedData;
     }
     return processedIssues;
+}
+
+function processSingleIssue(issue, issueNumber) {
+    const openTaskCount = (issue.body.match(/- \[ \]/g) || []).length;
+    const completedTaskCount = (issue.body.match(/- \[x\]/g) || []).length;
+    const allTaskCount = openTaskCount + completedTaskCount;
+    if (allTaskCount === 0) {
+        console.warn(`No tasks found in issue #${issueNumber}`);
+        return null;
+    }
+    const progress = (completedTaskCount / allTaskCount) * 100;
+    return { allTaskCount, completedTaskCount, progress };
 }
 
 function processWebIssues(apiData) {
@@ -171,7 +228,7 @@ function processWebIssues(apiData) {
         const counterText = document.createElement("span");
         counterText.innerHTML = `${completedTaskCount} / ${allTaskCount}`;
         counterText.style.marginRight = "8px";
-        counterText.style.fontSize = "var(--text-body-size-small,.75rem)";
+        counterText.style.fontSize = "0.75rem";
         counterText.style.lineHeight = "20px";
         counterText.style.fontWeight = "var(--base-text-weight-semibold,600)";
 
@@ -199,13 +256,65 @@ function processWebIssues(apiData) {
     });
 }
 
+function processOneIssue(apiData) {
+    const issueMetadata = document.querySelector('div[data-testid="issue-metadata-fixed"]');
+    const issueDivForBadge = issueMetadata.children[0].children[0];
+
+    if (!issueDivForBadge) {
+        console.warn(`No issue metadata found for issue #${issueNumber}`);
+        return;
+    }
+
+    const { allTaskCount, completedTaskCount, progress } = apiData;
+
+    const counterDiv = document.createElement("div");
+    counterDiv.style.display = "inline-flex";
+    counterDiv.style.marginRight = "var(--base-size-4)";
+    counterDiv.style.height = "100%";
+
+    const counterBorder = document.createElement("span");
+    counterBorder.style.borderWidth = "1px";
+    counterBorder.style.borderColor = "var(--borderColor-muted,var(--color-border-muted))";
+    counterBorder.style.borderStyle = "solid";
+    counterBorder.style.borderRadius = "var(--borderRadius-full,624.9375rem)";
+    counterBorder.style.fontSize = "var(--text-body-size-small,.75rem)";
+
+    const counterText = document.createElement("span");
+    counterText.innerHTML = `${completedTaskCount} / ${allTaskCount}`;
+    counterText.style.marginRight = "8px";
+    counterText.style.fontSize = "1.5em";
+    counterText.style.fontWeight = "var(--base-text-weight-semibold,600)";
+
+    const svgDiv = document.createElement("div");
+    svgDiv.style.display = "inline-flex";
+    svgDiv.style.width = "20px";
+    svgDiv.style.height = "auto";
+    svgDiv.style.verticalAlign = "text-bottom";
+    svgDiv.style.margin = "0 5px";
+
+    const strokeDashoffset = ((100 - progress) / 100) * 50.28; // 50.28 is the circumference of the circle with radius 8
+
+    svgDiv.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" style="transform: rotate(-90deg)">
+            <circle r="8" cx="10" cy="10" fill="transparent" stroke="#444c56" stroke-width="3px"></circle>
+            <circle r="8" cx="10" cy="10" stroke="#52ec53" stroke-width="3px" stroke-linecap="round" stroke-dashoffset="${strokeDashoffset}px" fill="transparent" stroke-dasharray="50.28px"></circle>
+        </svg>`;
+
+    counterBorder.appendChild(svgDiv);
+    counterBorder.appendChild(counterText);
+    counterDiv.appendChild(counterBorder);
+    issueDivForBadge.appendChild(counterDiv);
+
+    console.log(`Single issue: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
+}
+
+// Issues page fetch
 async function fetchIssues() {
     browser.storage.local.get('token').then((result) => {
         const token = result.token;
         if (token) {
             const filters = getSearchFilters();
             const { owner, repo } = getRepInfo();
-            getDataFromAPI(token, owner, repo, filters).then((issues) => {
+            getApiIssues(token, owner, repo, filters).then((issues) => {
                 if (issues && issues.length > 0) {
                     console.log('Issues retrieved from API:', issues.length);
                     processWebIssues(processIssues(issues));
@@ -221,20 +330,46 @@ async function fetchIssues() {
     });
 }
 
+// Single issue fetch
+async function fetchSingleIssue(issueNumber) {
+    browser.storage.local.get('token').then((result) => {
+        const token = result.token;
+        if (token) {
+            const { owner, repo } = getRepInfo();
+            getSingleApiIssue(token, owner, repo, issueNumber).then((issue) => {
+                if (issue) {
+                    const processedData = processSingleIssue(issue, issueNumber);
+                    if (!processedData) {
+                        return;
+                    }
+                    processOneIssue(processedData);
+                    console.log(`Processed data for issue #${issueNumber}:`, processedData);
+                } else {
+                    console.log(`No data found for issue #${issueNumber}`);
+                }
+            }).catch((error) => {
+                console.error(`Error fetching issue #${issueNumber}:`, error);
+            });
+        }
+    }).catch((error) => {
+        console.error('Error retrieving token from storage:', error);
+    });
+}
+
 if (document.location.pathname.endsWith('/issues') || document.location.pathname.endsWith('/issues/')) {
     setTimeout(() => {
         fetchIssues();
     }, 1000);
 }
 
-let match = document.location.pathname.match(/\/issues\/(\d+)\/?$/);
-
 // match "/issue/12" and "/issue/12/"
-if (match) {
-    const issueNumber = match[1];
+if (document.location.pathname.match(/\/issues\/(\d+)\/?$/)) {
+    const issueNumber = document.location.pathname.match(/\/issues\/(\d+)\/?$/)[1];
     console.log(`Issue number found: ${issueNumber}`);
 
-    //fetchIssue();
+    setTimeout(() => {
+        fetchSingleIssue(issueNumber);
+    }, 1000);
 }
 
 // Check for GitHub progress bar removal
@@ -247,7 +382,15 @@ var observer = new MutationObserver(function (mutations) {
             if (mutation.removedNodes[0] && mutation.removedNodes[0].classList.contains('turbo-progress-bar')) {
                 console.log('Turbo progress bar removed');
                 if (document.location.pathname.endsWith('/issues') || document.location.pathname.endsWith('/issues/')) {
-                    fetchIssues();
+                    setTimeout(() => {
+                        fetchIssues();
+                    }, 1000);
+                } else if (document.location.pathname.match(/\/issues\/(\d+)\/?$/)) {
+                    const issueNumber = document.location.pathname.match(/\/issues\/(\d+)\/?$/)[1];
+                    console.log(`Issue number found: ${issueNumber}`);
+                    setTimeout(() => {
+                        fetchSingleIssue(issueNumber);
+                    }, 1000);
                 }
             }
         }
