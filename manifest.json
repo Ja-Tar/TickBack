@@ -26,5 +26,10 @@
     },
     "permissions": [
         "storage"
-    ]
+    ],
+    "action": {
+        "default_icon": "icon.svg",
+        "default_title": "TickBack",
+        "default_popup": "popup/popup.html"
+    }
 }

@@ -63,6 +63,13 @@ async function getApiIssues(
             console.log(`Rate limit remaining: ${lastRateLimitRemaining}`);
         }
 
+        browser.storage.local.set({
+            lastRateLimitRemaining: lastRateLimitRemaining,
+            lastRateLimitReset: lastRateLimitReset
+        }).catch((error) => {
+            console.error('Error saving session data:', error);
+        });
+
         const data = await response.json();
         return data.data.repository.issues.nodes.map(issue => ({
             body: issue.body,
@@ -113,6 +120,23 @@ async function getSingleApiIssue(
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
+
+        // Check for rate limit headers
+        const rateLimitRemaining = response.headers.get('X-RateLimit-Remaining');
+        const rateLimitReset = response.headers.get('X-RateLimit-Reset');
+
+        if (rateLimitRemaining !== null && rateLimitReset !== null) {
+            lastRateLimitRemaining = parseInt(rateLimitRemaining, 10);
+            lastRateLimitReset = parseInt(rateLimitReset, 10);
+            console.log(`Rate limit remaining: ${lastRateLimitRemaining}`);
+        }
+
+        browser.storage.local.set({
+            lastRateLimitRemaining: lastRateLimitRemaining,
+            lastRateLimitReset: lastRateLimitReset
+        }).catch((error) => {
+            console.error('Error saving session data:', error);
+        });
 
         const data = await response.json();
         return data.data.repository.issue;
@@ -194,7 +218,7 @@ function processWebIssues(apiData) {
     const issues = document.querySelectorAll("li[role='listitem']");
     issues.forEach((issue) => {
         const title = issue.querySelector("[class*='Title-module__container']");
-        const issueNumber = issue.querySelector("span[class*='issue-item-module__defaultNumberDescription']").textContent.trim().split('#')[1];
+        const issueNumber = issue.querySelector("span[class*='defaultNumberDescription']").textContent.trim().split('#')[1];
         const trailingBadgesContainer = title.querySelector("[class*='Title-module__trailingBadgesContainer']");
 
         if (!title || !issueNumber || !trailingBadgesContainer) return;
@@ -336,6 +360,7 @@ async function fetchSingleIssue(issueNumber) {
         const token = result.token;
         if (token) {
             const { owner, repo } = getRepInfo();
+            // REMOVE: the API request for the body, but page it`s rendered 
             getSingleApiIssue(token, owner, repo, issueNumber).then((issue) => {
                 if (issue) {
                     const processedData = processSingleIssue(issue, issueNumber);
@@ -376,8 +401,8 @@ if (document.location.pathname.match(/\/issues\/(\d+)\/?$/)) {
 
 var observer = new MutationObserver(function (mutations) {
     mutations.forEach(function (mutation) {
+        //console.debug('HTML changed', mutation);
         if (mutation.target.nodeName === 'HTML' && mutation.type === 'childList') {
-            // console.log('HTML changed', mutation);
             // div.turbo-progress-bar
             if (mutation.removedNodes[0] && mutation.removedNodes[0].classList.contains('turbo-progress-bar')) {
                 console.log('Turbo progress bar removed');
