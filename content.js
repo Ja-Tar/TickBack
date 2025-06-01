@@ -80,69 +80,43 @@ async function getApiIssues(
     }
 }
 
-async function getSingleApiIssue(
-    token,
-    owner = 'Ja-Tar',
-    repo = 'TickBack',
-    issueNumber
-) {
-    // Stop if rate limit is reached
-    if (lastRateLimitRemaining !== null && lastRateLimitRemaining <= 5) {
-        const resetTime = new Date(lastRateLimitReset * 1000);
-        if (resetTime <= new Date()) {
-            console.warn('Rate limit reached, but reset time has passed. Fetching data...');
-        } else {
-            console.warn('Rate limit reached, waiting for reset time...');
-            return [];
+function getSingleIssueBody() {
+    const issueBody = document.querySelector('div[data-testid*="issue-body"]');
+    const markdownBody = issueBody.querySelector('div[data-testid*="markdown-body"]');
+    const taskListUl = markdownBody.querySelectorAll('ul[class*="contains-task-list"]');
+    if (!taskListUl || taskListUl.length === 0) {
+        console.warn('No task list found in issue body');
+        return null;
+    }
+
+    let openTaskCount = 0;
+    let completedTaskCount = 0;
+
+    for (let i = 0; i < taskListUl.length; i++) {
+        const taskListDiv = taskListUl[i].querySelector('div[class*="base-list-item"]');
+        const taskListItems = taskListDiv.children;
+        const taskListNumber = taskListItems.length;
+        for (let j = 0; j < taskListNumber; j++) {
+            const taskItem = taskListItems[j];
+            const checkbox = taskItem.querySelector('input[type="checkbox"]');
+            if (checkbox) {
+                if (checkbox.ariaChecked === 'true') {
+                    completedTaskCount++;
+                } else {
+                    openTaskCount++;
+                }
+            }
         }
     }
 
-    try {
-        const response = await fetch('https://api.github.com/graphql', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                query: `
-                    query repository {
-                        repository(owner: "${owner}", name: "${repo}") {
-                            issue(number: ${issueNumber}) {
-                                body
-                            }
-                        }
-                    }
-                `
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-
-        // Check for rate limit headers
-        const rateLimitRemaining = response.headers.get('X-RateLimit-Remaining');
-        const rateLimitReset = response.headers.get('X-RateLimit-Reset');
-
-        if (rateLimitRemaining !== null && rateLimitReset !== null) {
-            lastRateLimitRemaining = parseInt(rateLimitRemaining, 10);
-            lastRateLimitReset = parseInt(rateLimitReset, 10);
-            console.log(`Rate limit remaining: ${lastRateLimitRemaining}`);
-        }
-
-        browser.storage.local.set({
-            lastRateLimitRemaining: lastRateLimitRemaining,
-            lastRateLimitReset: lastRateLimitReset
-        }).catch((error) => {
-            console.error('Error saving session data:', error);
-        });
-
-        const data = await response.json();
-        return data.data.repository.issue;
-    } catch (error) {
-        console.error('Error:', error);
+    const allTaskCount = openTaskCount + completedTaskCount;
+    if (allTaskCount === 0) {
+        console.warn('No tasks found in issue body');
+        return null;
     }
+    const progress = (completedTaskCount / allTaskCount) * 100;
+
+    return { allTaskCount, completedTaskCount, progress };
 }
 
 function getRepInfo() {
@@ -193,25 +167,17 @@ function processIssues(issues) {
     let processedIssues = {};
     for (let i = 0; i < issues.length; i++) {
         const issue = issues[i];
-        const processedData = processSingleIssue(issue, issue.number);
-        if (!processedData) {
+        const openTaskCount = (issue.body.match(/^- \[ \]/gm) || []).length;
+        const completedTaskCount = (issue.body.match(/^- \[x\]/gm) || []).length;
+        const allTaskCount = openTaskCount + completedTaskCount;
+        if (allTaskCount === 0) {
+            console.warn(`No tasks found in issue #${issue.number}`);
             continue;
         }
-        processedIssues[issue.number] = processedData;
+        const progress = (completedTaskCount / allTaskCount) * 100;
+        processedIssues[issue.number] = { allTaskCount, completedTaskCount, progress };
     }
     return processedIssues;
-}
-
-function processSingleIssue(issue, issueNumber) {
-    const openTaskCount = (issue.body.match(/- \[ \]/g) || []).length;
-    const completedTaskCount = (issue.body.match(/- \[x\]/g) || []).length;
-    const allTaskCount = openTaskCount + completedTaskCount;
-    if (allTaskCount === 0) {
-        console.warn(`No tasks found in issue #${issueNumber}`);
-        return null;
-    }
-    const progress = (completedTaskCount / allTaskCount) * 100;
-    return { allTaskCount, completedTaskCount, progress };
 }
 
 function processWebIssues(apiData) {
@@ -233,11 +199,11 @@ function processWebIssues(apiData) {
         const { allTaskCount, completedTaskCount, progress } = apiIssueData;
 
         const counterDiv = document.createElement("div");
-        counterDiv.style.display = "inline-block";
+        counterDiv.style.display = "inline-flex";
         counterDiv.style.marginRight = "var(--base-size-4)";
         counterDiv.style.maxWidth = "100%";
         counterDiv.style.verticalAlign = "text-top";
-        counterDiv.style.height = "auto";
+        counterDiv.style.height = "20px";
 
         const counterBorder = document.createElement("span");
         counterBorder.style.borderWidth = "1px";
@@ -246,23 +212,24 @@ function processWebIssues(apiData) {
         counterBorder.style.maxWidth = "100%";
         counterBorder.style.borderRadius = "var(--borderRadius-full,624.9375rem)";
         counterBorder.style.fontSize = "var(--text-body-size-small,.75rem)";
-        counterBorder.style.height = "20px";
-        counterBorder.style.lineHeight = "20px";
+        counterBorder.style.display = "inline-flex";
+        counterBorder.style.alignItems = "center";
 
         const counterText = document.createElement("span");
         counterText.innerHTML = `${completedTaskCount} / ${allTaskCount}`;
-        counterText.style.marginRight = "8px";
+        counterText.style.marginRight = "6px";
         counterText.style.fontSize = "0.75rem";
         counterText.style.lineHeight = "20px";
         counterText.style.fontWeight = "var(--base-text-weight-semibold,600)";
+        counterText.style.lineHeight = "1";
 
         const svgDiv = document.createElement("div");
         svgDiv.style.display = "inline-block";
         svgDiv.style.width = "13px";
         svgDiv.style.height = "13px";
-        svgDiv.style.verticalAlign = "sub";
         svgDiv.style.marginRight = "5px";
         svgDiv.style.marginLeft = "3px";
+        svgDiv.style.lineHeight = "1";
 
         const strokeDashoffset = ((100 - progress) / 100) * 50.28; // 50.28 is the circumference of the circle with radius 8
 
@@ -280,7 +247,7 @@ function processWebIssues(apiData) {
     });
 }
 
-function processOneIssue(apiData) {
+function processOneIssue(apiData, issueNumber) {
     const issueMetadata = document.querySelector('div[data-testid="issue-metadata-fixed"]');
     const issueDivForBadge = issueMetadata.children[0].children[0];
 
@@ -290,11 +257,33 @@ function processOneIssue(apiData) {
     }
 
     const { allTaskCount, completedTaskCount, progress } = apiData;
+    const strokeDashoffset = ((100 - progress) / 100) * 50.28; // 50.28 is the circumference of the circle with radius 8
+    const progressCircleSVG = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" style="transform: rotate(-90deg)">
+            <circle r="8" cx="10" cy="10" fill="transparent" stroke="#444c56" stroke-width="3px"></circle>
+            <circle r="8" cx="10" cy="10" stroke="#52ec53" stroke-width="3px" stroke-linecap="round" stroke-dashoffset="${strokeDashoffset}px" fill="transparent" stroke-dasharray="50.28px"></circle>
+        </svg>`;
+
+    const oldCounterDiv = issueDivForBadge.querySelector("#tickback-counter");
+
+    if (oldCounterDiv) {
+        // Change values in existing counter
+        const counterText = oldCounterDiv.querySelector("#tickback-counter-text");
+        if (counterText) {
+            counterText.innerHTML = `${completedTaskCount} / ${allTaskCount}`;
+        }
+        const svgDiv = oldCounterDiv.querySelector("#tickback-svg-div");
+        if (svgDiv) {
+            svgDiv.innerHTML = progressCircleSVG;
+        }
+        console.log(`Updated existing issue counter: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
+        return;
+    }
 
     const counterDiv = document.createElement("div");
     counterDiv.style.display = "inline-flex";
     counterDiv.style.marginRight = "var(--base-size-4)";
     counterDiv.style.height = "100%";
+    counterDiv.id = "tickback-counter";
 
     const counterBorder = document.createElement("span");
     counterBorder.style.borderWidth = "1px";
@@ -302,37 +291,53 @@ function processOneIssue(apiData) {
     counterBorder.style.borderStyle = "solid";
     counterBorder.style.borderRadius = "var(--borderRadius-full,624.9375rem)";
     counterBorder.style.fontSize = "var(--text-body-size-small,.75rem)";
+    counterBorder.style.alignContent = "center";
+    counterBorder.id = "tickback-counter-border";
 
     const counterText = document.createElement("span");
     counterText.innerHTML = `${completedTaskCount} / ${allTaskCount}`;
     counterText.style.marginRight = "8px";
     counterText.style.fontSize = "1.5em";
     counterText.style.fontWeight = "var(--base-text-weight-semibold,600)";
+    counterText.style.verticalAlign = "super";
+    counterText.id = "tickback-counter-text";
 
     const svgDiv = document.createElement("div");
     svgDiv.style.display = "inline-flex";
     svgDiv.style.width = "20px";
     svgDiv.style.height = "auto";
-    svgDiv.style.verticalAlign = "text-bottom";
+    svgDiv.style.verticalAlign = "baseline";
     svgDiv.style.margin = "0 5px";
-
-    const strokeDashoffset = ((100 - progress) / 100) * 50.28; // 50.28 is the circumference of the circle with radius 8
-
-    svgDiv.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" style="transform: rotate(-90deg)">
-            <circle r="8" cx="10" cy="10" fill="transparent" stroke="#444c56" stroke-width="3px"></circle>
-            <circle r="8" cx="10" cy="10" stroke="#52ec53" stroke-width="3px" stroke-linecap="round" stroke-dashoffset="${strokeDashoffset}px" fill="transparent" stroke-dasharray="50.28px"></circle>
-        </svg>`;
+    svgDiv.id = "tickback-svg-div";
+    svgDiv.innerHTML = progressCircleSVG;
 
     counterBorder.appendChild(svgDiv);
     counterBorder.appendChild(counterText);
     counterDiv.appendChild(counterBorder);
     issueDivForBadge.appendChild(counterDiv);
 
+    const issueBody = document.querySelector('div[data-testid*="issue-body"]');
+    const markdownBody = issueBody.querySelector('div[data-testid*="markdown-body"]');
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            const mutationTarget = markdownBody.children[0];
+            if (mutation.type === 'childList' && mutation.target === mutationTarget) {
+                console.log(`Issue #${issueNumber} task list changed, reloading...`);
+                loadSingleIssue(issueNumber);
+            }
+        });
+    });
+    observer.observe(markdownBody, {
+        childList: true,
+        subtree: true,
+        characterData: true
+    });
+
     console.log(`Single issue: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
 }
 
 // Issues page fetch
-async function fetchIssues() {
+async function loadIssuesPage() {
     browser.storage.local.get('token').then((result) => {
         const token = result.token;
         if (token) {
@@ -355,26 +360,16 @@ async function fetchIssues() {
 }
 
 // Single issue fetch
-async function fetchSingleIssue(issueNumber) {
+function loadSingleIssue(issueNumber) {
     browser.storage.local.get('token').then((result) => {
         const token = result.token;
         if (token) {
-            const { owner, repo } = getRepInfo();
-            // REMOVE: the API request for the body, but page it`s rendered 
-            getSingleApiIssue(token, owner, repo, issueNumber).then((issue) => {
-                if (issue) {
-                    const processedData = processSingleIssue(issue, issueNumber);
-                    if (!processedData) {
-                        return;
-                    }
-                    processOneIssue(processedData);
-                    console.log(`Processed data for issue #${issueNumber}:`, processedData);
-                } else {
-                    console.log(`No data found for issue #${issueNumber}`);
-                }
-            }).catch((error) => {
-                console.error(`Error fetching issue #${issueNumber}:`, error);
-            });
+            const processedData = getSingleIssueBody();
+            if (!processedData) {
+                console.warn(`No task list found in issue #${issueNumber}`);
+                return;
+            }
+            processOneIssue(processedData, issueNumber);
         }
     }).catch((error) => {
         console.error('Error retrieving token from storage:', error);
@@ -383,7 +378,7 @@ async function fetchSingleIssue(issueNumber) {
 
 if (document.location.pathname.endsWith('/issues') || document.location.pathname.endsWith('/issues/')) {
     setTimeout(() => {
-        fetchIssues();
+        loadIssuesPage();
     }, 1000);
 }
 
@@ -393,7 +388,7 @@ if (document.location.pathname.match(/\/issues\/(\d+)\/?$/)) {
     console.log(`Issue number found: ${issueNumber}`);
 
     setTimeout(() => {
-        fetchSingleIssue(issueNumber);
+        loadSingleIssue(issueNumber);
     }, 1000);
 }
 
@@ -408,13 +403,13 @@ var observer = new MutationObserver(function (mutations) {
                 console.log('Turbo progress bar removed');
                 if (document.location.pathname.endsWith('/issues') || document.location.pathname.endsWith('/issues/')) {
                     setTimeout(() => {
-                        fetchIssues();
+                        loadIssuesPage();
                     }, 1000);
                 } else if (document.location.pathname.match(/\/issues\/(\d+)\/?$/)) {
                     const issueNumber = document.location.pathname.match(/\/issues\/(\d+)\/?$/)[1];
                     console.log(`Issue number found: ${issueNumber}`);
                     setTimeout(() => {
-                        fetchSingleIssue(issueNumber);
+                        loadSingleIssue(issueNumber);
                     }, 1000);
                 }
             }
