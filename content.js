@@ -361,19 +361,12 @@ async function loadIssuesPage() {
 
 // Single issue fetch
 function loadSingleIssue(issueNumber) {
-    browser.storage.local.get('token').then((result) => {
-        const token = result.token;
-        if (token) {
-            const processedData = getSingleIssueBody();
-            if (!processedData) {
-                console.warn(`No task list found in issue #${issueNumber}`);
-                return;
-            }
-            processOneIssue(processedData, issueNumber);
-        }
-    }).catch((error) => {
-        console.error('Error retrieving token from storage:', error);
-    });
+    const processedData = getSingleIssueBody();
+    if (!processedData) {
+        console.warn(`No task list found in issue #${issueNumber}`);
+        return;
+    }
+    processOneIssue(processedData, issueNumber);
 }
 
 if (document.location.pathname.endsWith('/issues') || document.location.pathname.endsWith('/issues/')) {
