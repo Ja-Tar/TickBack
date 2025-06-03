@@ -7,7 +7,7 @@ async function getApiIssues(
     token,
     owner = 'Ja-Tar',
     repo = 'TickBack',
-    query = 'state:open sort:created-desc'
+    query = 'state:open sort:created-desc type:issue'
 ) {
     // Stop if rate limit is reached
     if (lastRateLimitRemaining !== null && lastRateLimitRemaining <= 5) {
@@ -65,10 +65,17 @@ async function getApiIssues(
         });
 
         const data = await response.json();
-        return data.data.search.nodes.map(issue => ({
+        const combinedData = data.data.search.nodes.map(issue => ({
             body: issue.body,
             number: issue.number
         }));
+        return combinedData.filter(issue => {
+            if (!issue.body || issue.body.trim() === '') {
+                console.warn(`Issue #${issue.number} has no body, skipping...`);
+                return false;
+            }
+            return true;
+        });
     } catch (error) {
         console.error('Error:', error);
     }
@@ -132,16 +139,17 @@ function getSearchFilters() {
     if (match) {
         const query = match[1];
         const filters = decodeURIComponent(query).split(' ');
+        filters.push('type:issue');
         console.log(`Search filters found in URL: ${filters}`);
         return filters.filter(filter => !filter.startsWith('is:')).join(" ");
     } else {
         console.warn('No search filters found in URL');
-        return;
     }
+    return 'state:open sort:created-desc type:issue';
 }
 
 function processIssues(issues) {
-    let processedIssues = {};
+    const processedIssues = {};
     for (let i = 0; i < issues.length; i++) {
         const issue = issues[i];
         const openTaskCount = (issue.body.match(/^- \[ \]/gm) || []).length;
@@ -180,7 +188,7 @@ function processWebIssues(apiData) {
             const progressCircleSVG = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" style="transform: rotate(-90deg)">
             <circle r="8" cx="10" cy="10" fill="transparent" stroke="#444c56" stroke-width="3px"></circle>
             <circle r="8" cx="10" cy="10" stroke="#52ec53" stroke-width="3px" stroke-linecap="round" stroke-dashoffset="${strokeDashoffset}px" fill="transparent" stroke-dasharray="50.28px"></circle>
-        </svg>`;
+            </svg>`;
             const oldCounterDiv = document.getElementById(`tickback-counter-${issueNumber}`);
 
             if (oldCounterDiv) {
@@ -377,7 +385,7 @@ function processOneIssue(apiData, issueNumber) {
 }
 
 // Issues page fetch
-async function loadIssuesPage() {
+function loadIssuesPage() {
     browser.storage.local.get('token').then((result) => {
         const token = result.token;
         if (token) {
@@ -400,12 +408,16 @@ async function loadIssuesPage() {
 
 // Single issue fetch
 function loadSingleIssue(issueNumber) {
-    const processedData = getSingleIssueBody();
-    if (!processedData) {
-        console.warn(`No task list found in issue #${issueNumber} body`);
-        return;
+    try {
+        const processedData = getSingleIssueBody();
+        if (!processedData) {
+            console.warn(`No task list found in issue #${issueNumber} body`);
+            return;
+        }
+        processOneIssue(processedData, issueNumber);
+    } catch (error) {
+        console.error(`Error processing issue #${issueNumber}:`, error);
     }
-    processOneIssue(processedData, issueNumber);
 }
 
 if (document.location.pathname.endsWith('/issues') || document.location.pathname.endsWith('/issues/')) {
@@ -415,8 +427,9 @@ if (document.location.pathname.endsWith('/issues') || document.location.pathname
 }
 
 // match "/issue/12" and "/issue/12/"
-if (document.location.pathname.match(/\/issues\/(\d+)\/?$/)) {
-    const issueNumber = document.location.pathname.match(/\/issues\/(\d+)\/?$/)[1];
+const regexIssuePage = /\/issues\/(\d+)\/?$/;
+if (regexIssuePage.test(document.location.pathname)) {
+    const issueNumber = regexIssuePage.exec(document.location.pathname)[1];
     console.log(`Issue number found: ${issueNumber}`);
 
     setTimeout(() => {
@@ -437,8 +450,8 @@ var observer = new MutationObserver(function (mutations) {
                     setTimeout(() => {
                         loadIssuesPage();
                     }, 1000);
-                } else if (document.location.pathname.match(/\/issues\/(\d+)\/?$/)) {
-                    const issueNumber = document.location.pathname.match(/\/issues\/(\d+)\/?$/)[1];
+                } else if (regexIssuePage.test(document.location.pathname)) {
+                    const issueNumber = regexIssuePage.exec(document.location.pathname)[1];
                     console.log(`Issue number found: ${issueNumber}`);
                     setTimeout(() => {
                         loadSingleIssue(issueNumber);
