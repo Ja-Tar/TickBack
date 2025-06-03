@@ -145,6 +145,7 @@ function getSearchFilters() {
     } else {
         console.warn('No search filters found in URL');
     }
+    return 'state:open sort:created-desc type:issue';
 }
 
 function processIssues(issues) {
@@ -384,7 +385,7 @@ function processOneIssue(apiData, issueNumber) {
 }
 
 // Issues page fetch
-async function loadIssuesPage() {
+function loadIssuesPage() {
     browser.storage.local.get('token').then((result) => {
         const token = result.token;
         if (token) {
