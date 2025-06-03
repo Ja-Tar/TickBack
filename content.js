@@ -7,8 +7,7 @@ async function getApiIssues(
     token,
     owner = 'Ja-Tar',
     repo = 'TickBack',
-    filterBy = ['states: OPEN'],
-    orderBy = ['CREATED_AT', 'DESC']
+    query = 'state:open sort:created-desc'
 ) {
     // Stop if rate limit is reached
     if (lastRateLimitRemaining !== null && lastRateLimitRemaining <= 5) {
@@ -30,21 +29,16 @@ async function getApiIssues(
             },
             body: JSON.stringify({
                 query: `
-                    query repository {
-                        repository(owner: "${owner}", name: "${repo}") {
-                            issues(
-                                first: 25
-                                orderBy: {field: ${orderBy[0]}, direction: ${orderBy[1]}}
-                                filterBy: {${filterBy.join(', ')}}
-                            ) {
-                                nodes {
-                                    body
-                                    number
-                                }
-                                totalCount
-                            }
+                    query search {
+                        search(first: 25, type: ISSUE, query: "repo:${owner}/${repo} ${query}") {
+                            nodes {
+    	                        ... on Issue {
+        	                        body
+        	                        number
+      	                    }
                         }
                     }
+                }
                 `
             })
         });
@@ -71,7 +65,7 @@ async function getApiIssues(
         });
 
         const data = await response.json();
-        return data.data.repository.issues.nodes.map(issue => ({
+        return data.data.search.nodes.map(issue => ({
             body: issue.body,
             number: issue.number
         }));
@@ -85,7 +79,6 @@ function getSingleIssueBody() {
     const markdownBody = issueBody.querySelector('div[data-testid*="markdown-body"]');
     const taskListUl = markdownBody.querySelectorAll('ul[class*="contains-task-list"]');
     if (!taskListUl || taskListUl.length === 0) {
-        console.warn('No task list found in issue body');
         return null;
     }
 
@@ -134,29 +127,13 @@ function getRepInfo() {
 }
 
 function getSearchFilters() {
-    const searchFiltersToAPI = {
-        'state:open': 'states: OPEN',
-        'state:closed': 'states: CLOSED'
-    };
-
     const url = decodeURI(document.location.href);
     const match = url.match(/github\.com\/[^/]+\/[^/]+\/issues\?q=(.*)/);
     if (match) {
         const query = match[1];
-        const filters = decodeURIComponent(query).split(' ').map(filter => filter.trim());
-        let apiFilters = [];
-        for (let i = 0; i < filters.length; i++) {
-            const normalizedFilter = filters[i].toLowerCase();
-            if (normalizedFilter.startsWith('is:')) {
-                continue;
-            } else if (!searchFiltersToAPI[normalizedFilter]) {
-                console.warn(`Unknown filter: ${filters[i]}`);
-                continue;
-            }
-            apiFilters.push(searchFiltersToAPI[normalizedFilter]);
-        }
-        console.log(`Filters: {${filters}}, API Filters: {${apiFilters}}`);
-        return apiFilters;
+        const filters = decodeURIComponent(query).split(' ');
+        console.log(`Search filters found in URL: ${filters}`);
+        return filters.filter(filter => !filter.startsWith('is:')).join(" ");
     } else {
         console.warn('No search filters found in URL');
         return;
@@ -181,8 +158,8 @@ function processIssues(issues) {
 }
 
 function processWebIssues(apiData) {
-    const issues = document.querySelectorAll("li[role='listitem']");
-    issues.forEach((issue) => {
+    const issueNodes = document.querySelectorAll("li[role='listitem']");
+    issueNodes.forEach((issue) => {
         const title = issue.querySelector("[class*='Title-module__container']");
         const issueNumber = issue.querySelector("span[class*='defaultNumberDescription']").textContent.trim().split('#')[1];
         const trailingBadgesContainer = title.querySelector("[class*='Title-module__trailingBadgesContainer']");
@@ -194,9 +171,29 @@ function processWebIssues(apiData) {
         if (!apiIssueData) {
             console.warn(`No API data for: ${issueNumber}`);
             return;
-        }
+        } 
 
         const { allTaskCount, completedTaskCount, progress } = apiIssueData;
+        const strokeDashoffset = ((100 - progress) / 100) * 50.28; // circumference -> radius 8
+        const progressCircleSVG = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" style="transform: rotate(-90deg)">
+            <circle r="8" cx="10" cy="10" fill="transparent" stroke="#444c56" stroke-width="3px"></circle>
+            <circle r="8" cx="10" cy="10" stroke="#52ec53" stroke-width="3px" stroke-linecap="round" stroke-dashoffset="${strokeDashoffset}px" fill="transparent" stroke-dasharray="50.28px"></circle>
+        </svg>`;
+        const oldCounterDiv = document.getElementById(`tickback-counter-${issueNumber}`);
+        
+        if (oldCounterDiv) {
+            // Change values in existing counter
+            const oldCounterText = document.getElementById(`tickback-counter-text-${issueNumber}`);
+            if (oldCounterText) {
+                oldCounterText.innerHTML = `${apiIssueData.completedTaskCount} / ${apiIssueData.allTaskCount}`;
+            }
+            const oldSvgDiv = document.getElementById(`tickback-svg-div-${issueNumber}`);
+            if (oldSvgDiv) {
+                oldSvgDiv.innerHTML = progressCircleSVG;
+            }
+            console.log(`Updated ${issueNumber}: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
+            return;
+        }
 
         const counterDiv = document.createElement("div");
         counterDiv.style.display = "inline-flex";
@@ -204,6 +201,8 @@ function processWebIssues(apiData) {
         counterDiv.style.maxWidth = "100%";
         counterDiv.style.verticalAlign = "text-top";
         counterDiv.style.height = "20px";
+        counterDiv.style.marginTop = "1px";
+        counterDiv.id = `tickback-counter-${issueNumber}`;
 
         const counterBorder = document.createElement("span");
         counterBorder.style.borderWidth = "1px";
@@ -222,6 +221,7 @@ function processWebIssues(apiData) {
         counterText.style.lineHeight = "20px";
         counterText.style.fontWeight = "var(--base-text-weight-semibold,600)";
         counterText.style.lineHeight = "1";
+        counterText.id = `tickback-counter-text-${issueNumber}`;
 
         const svgDiv = document.createElement("div");
         svgDiv.style.display = "inline-block";
@@ -230,20 +230,15 @@ function processWebIssues(apiData) {
         svgDiv.style.marginRight = "5px";
         svgDiv.style.marginLeft = "3px";
         svgDiv.style.lineHeight = "1";
-
-        const strokeDashoffset = ((100 - progress) / 100) * 50.28; // 50.28 is the circumference of the circle with radius 8
-
-        svgDiv.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" style="transform: rotate(-90deg)">
-            <circle r="8" cx="10" cy="10" fill="transparent" stroke="#444c56" stroke-width="3px"></circle>
-            <circle r="8" cx="10" cy="10" stroke="#52ec53" stroke-width="3px" stroke-linecap="round" stroke-dashoffset="${strokeDashoffset}px" fill="transparent" stroke-dasharray="50.28px"></circle>
-        </svg>`;
+        svgDiv.id = `tickback-svg-div-${issueNumber}`;
+        svgDiv.innerHTML = progressCircleSVG;
 
         counterBorder.appendChild(svgDiv);
         counterBorder.appendChild(counterText);
         counterDiv.appendChild(counterBorder);
         trailingBadgesContainer.prepend(counterDiv);
 
-        console.log(`Issue: ${issueNumber} - tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
+        console.log(`${issueNumber} - tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
     });
 }
 
@@ -257,7 +252,7 @@ function processOneIssue(apiData, issueNumber) {
     }
 
     const { allTaskCount, completedTaskCount, progress } = apiData;
-    const strokeDashoffset = ((100 - progress) / 100) * 50.28; // 50.28 is the circumference of the circle with radius 8
+    const strokeDashoffset = ((100 - progress) / 100) * 50.28; // circumference -> radius 8
     const progressCircleSVG = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" style="transform: rotate(-90deg)">
             <circle r="8" cx="10" cy="10" fill="transparent" stroke="#444c56" stroke-width="3px"></circle>
             <circle r="8" cx="10" cy="10" stroke="#52ec53" stroke-width="3px" stroke-linecap="round" stroke-dashoffset="${strokeDashoffset}px" fill="transparent" stroke-dasharray="50.28px"></circle>
@@ -341,12 +336,11 @@ async function loadIssuesPage() {
     browser.storage.local.get('token').then((result) => {
         const token = result.token;
         if (token) {
-            const filters = getSearchFilters();
             const { owner, repo } = getRepInfo();
-            getApiIssues(token, owner, repo, filters).then((issues) => {
-                if (issues && issues.length > 0) {
-                    console.log('Issues retrieved from API:', issues.length);
-                    processWebIssues(processIssues(issues));
+            getApiIssues(token, owner, repo, getSearchFilters()).then((apiIssues) => {
+                if (apiIssues && apiIssues.length > 0) {
+                    console.log('Issues retrieved from API:', apiIssues.length);
+                    processWebIssues(processIssues(apiIssues));
                 } else {
                     console.log('No issues found or empty response');
                 }
@@ -363,7 +357,7 @@ async function loadIssuesPage() {
 function loadSingleIssue(issueNumber) {
     const processedData = getSingleIssueBody();
     if (!processedData) {
-        console.warn(`No task list found in issue #${issueNumber}`);
+        console.warn(`No task list found in issue #${issueNumber} body`);
         return;
     }
     processOneIssue(processedData, issueNumber);

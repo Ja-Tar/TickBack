@@ -42,7 +42,7 @@ function updateProgressBar() {
             resetDiv.style.color = 'transparent';
             progressBar.value = 0;
             document.getElementById('lastRateLimitValue').textContent = '0%';
-            infoDiv.innerHTML = '<p>Please set your GitHub token in the options page.</p>';
+            infoDiv.innerHTML = '<p>GitHub token NOT set</p>';
             infoDiv.style.display = 'block';
             
             return;
