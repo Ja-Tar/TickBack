@@ -158,177 +158,222 @@ function processIssues(issues) {
 }
 
 function processWebIssues(apiData) {
-    const issueNodes = document.querySelectorAll("li[role='listitem']");
-    issueNodes.forEach((issue) => {
-        const title = issue.querySelector("[class*='Title-module__container']");
-        const issueNumber = issue.querySelector("span[class*='defaultNumberDescription']").textContent.trim().split('#')[1];
-        const trailingBadgesContainer = title.querySelector("[class*='Title-module__trailingBadgesContainer']");
+    browser.storage.local.get('completedIcon').then((data) => {
+        const completedIcon = data.completedIcon !== undefined ? data.completedIcon : true;
+        const issueNodes = document.querySelectorAll("li[role='listitem']");
+        issueNodes.forEach((issue) => {
+            const title = issue.querySelector("[class*='Title-module__container']");
+            const issueNumber = issue.querySelector("span[class*='defaultNumberDescription']").textContent.trim().split('#')[1];
+            const trailingBadgesContainer = title.querySelector("[class*='Title-module__trailingBadgesContainer']");
 
-        if (!title || !issueNumber || !trailingBadgesContainer) return;
+            if (!title || !issueNumber || !trailingBadgesContainer) return;
 
-        const apiIssueData = apiData[parseInt(issueNumber, 10)];
+            const apiIssueData = apiData[parseInt(issueNumber, 10)];
 
-        if (!apiIssueData) {
-            console.warn(`No API data for: ${issueNumber}`);
+            if (!apiIssueData) {
+                console.warn(`No API data for: ${issueNumber}`);
+                return;
+            }
+
+            const { allTaskCount, completedTaskCount, progress } = apiIssueData;
+            const strokeDashoffset = ((100 - progress) / 100) * 50.28; // circumference -> radius 8
+            const progressCircleSVG = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" style="transform: rotate(-90deg)">
+            <circle r="8" cx="10" cy="10" fill="transparent" stroke="#444c56" stroke-width="3px"></circle>
+            <circle r="8" cx="10" cy="10" stroke="#52ec53" stroke-width="3px" stroke-linecap="round" stroke-dashoffset="${strokeDashoffset}px" fill="transparent" stroke-dasharray="50.28px"></circle>
+        </svg>`;
+            const oldCounterDiv = document.getElementById(`tickback-counter-${issueNumber}`);
+
+            if (oldCounterDiv) {
+                // Change values in existing counter
+                const oldCounterText = document.getElementById(`tickback-counter-text-${issueNumber}`);
+                if (oldCounterText) {
+                    oldCounterText.innerHTML = `${apiIssueData.completedTaskCount} / ${apiIssueData.allTaskCount}`;
+                }
+                const oldSvgDiv = document.getElementById(`tickback-svg-div-${issueNumber}`);
+                if (completedIcon && completedTaskCount === allTaskCount) {
+                    oldSvgDiv.innerHTML = "";
+                    const imgElement = document.createElement("img");
+                    imgElement.style.height = "inherit";
+                    imgElement.src = browser.runtime.getURL("icons/iconoir/check-circle.svg");
+                    oldSvgDiv.appendChild(imgElement);
+                } else if (oldSvgDiv) {
+                    oldSvgDiv.innerHTML = progressCircleSVG;
+                }
+                console.log(`Updated ${issueNumber}: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
+                return;
+            }
+
+            const counterDiv = document.createElement("div");
+            counterDiv.style.display = "inline-flex";
+            counterDiv.style.marginRight = "var(--base-size-4)";
+            counterDiv.style.maxWidth = "100%";
+            counterDiv.style.verticalAlign = "text-top";
+            counterDiv.style.height = "20px";
+            counterDiv.style.marginTop = "1px";
+            counterDiv.id = `tickback-counter-${issueNumber}`;
+
+            const counterBorder = document.createElement("span");
+            counterBorder.style.borderWidth = "1px";
+            counterBorder.style.borderColor = "var(--borderColor-muted,var(--color-border-muted))";
+            counterBorder.style.borderStyle = "solid";
+            counterBorder.style.maxWidth = "100%";
+            counterBorder.style.borderRadius = "var(--borderRadius-full,624.9375rem)";
+            counterBorder.style.fontSize = "var(--text-body-size-small,.75rem)";
+            counterBorder.style.display = "inline-flex";
+            counterBorder.style.alignItems = "center";
+
+            const counterText = document.createElement("span");
+            counterText.innerHTML = `${completedTaskCount} / ${allTaskCount}`;
+            counterText.style.marginRight = "6px";
+            counterText.style.fontSize = "0.75rem";
+            counterText.style.lineHeight = "20px";
+            counterText.style.fontWeight = "var(--base-text-weight-semibold,600)";
+            counterText.style.lineHeight = "1";
+            counterText.style.marginBottom = "1px";
+            counterText.id = `tickback-counter-text-${issueNumber}`;
+
+            const svgDiv = document.createElement("div");
+            svgDiv.style.display = "inline-block";
+            svgDiv.style.width = "13px";
+            svgDiv.style.height = "13px";
+            svgDiv.style.marginRight = "5px";
+            svgDiv.style.marginLeft = "3px";
+            svgDiv.style.lineHeight = "1";
+            svgDiv.id = `tickback-svg-div-${issueNumber}`;
+            if (completedIcon && completedTaskCount === allTaskCount) {
+                const imgElement = document.createElement("img");
+                imgElement.style.height = "inherit";
+                imgElement.src = browser.runtime.getURL("icons/iconoir/check-circle.svg");
+                svgDiv.appendChild(imgElement);
+            } else {
+                svgDiv.innerHTML = progressCircleSVG;
+            }
+
+            counterBorder.appendChild(svgDiv);
+            counterBorder.appendChild(counterText);
+            counterDiv.appendChild(counterBorder);
+            trailingBadgesContainer.prepend(counterDiv);
+
+            console.log(`${issueNumber} - tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
+        });
+    });
+}
+
+function processOneIssue(apiData, issueNumber) {
+    browser.storage.local.get(['completedIcon', 'incompleteIcon']).then((data) => {
+        const completedIcon = data.completedIcon !== undefined ? data.completedIcon : true;
+        const incompleteIcon = data.incompleteIcon !== undefined ? data.incompleteIcon : true;
+        const issueMetadata = document.querySelector('div[data-testid="issue-metadata-fixed"]');
+        const issueDivForBadge = issueMetadata.children[0].children[0];
+
+        if (!issueDivForBadge) {
+            console.warn(`No issue metadata found for issue #${issueNumber}`);
             return;
-        } 
+        }
 
-        const { allTaskCount, completedTaskCount, progress } = apiIssueData;
+        const { allTaskCount, completedTaskCount, progress } = apiData;
         const strokeDashoffset = ((100 - progress) / 100) * 50.28; // circumference -> radius 8
         const progressCircleSVG = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" style="transform: rotate(-90deg)">
             <circle r="8" cx="10" cy="10" fill="transparent" stroke="#444c56" stroke-width="3px"></circle>
             <circle r="8" cx="10" cy="10" stroke="#52ec53" stroke-width="3px" stroke-linecap="round" stroke-dashoffset="${strokeDashoffset}px" fill="transparent" stroke-dasharray="50.28px"></circle>
         </svg>`;
-        const oldCounterDiv = document.getElementById(`tickback-counter-${issueNumber}`);
-        
+
+        const oldCounterDiv = issueDivForBadge.querySelector("#tickback-counter");
+
         if (oldCounterDiv) {
             // Change values in existing counter
-            const oldCounterText = document.getElementById(`tickback-counter-text-${issueNumber}`);
-            if (oldCounterText) {
-                oldCounterText.innerHTML = `${apiIssueData.completedTaskCount} / ${apiIssueData.allTaskCount}`;
+            const counterText = oldCounterDiv.querySelector("#tickback-counter-text");
+            if (counterText) {
+                counterText.innerHTML = `${completedTaskCount} / ${allTaskCount}`;
             }
-            const oldSvgDiv = document.getElementById(`tickback-svg-div-${issueNumber}`);
-            if (oldSvgDiv) {
-                oldSvgDiv.innerHTML = progressCircleSVG;
+            const svgDiv = oldCounterDiv.querySelector("#tickback-svg-div");
+            if (completedIcon && completedTaskCount === allTaskCount) {
+                svgDiv.innerHTML = "";
+                const imgElement = document.createElement("img");
+                imgElement.style.height = "20px";
+                imgElement.src = browser.runtime.getURL("icons/iconoir/check-circle.svg");
+                svgDiv.appendChild(imgElement);
+            } else if (incompleteIcon && completedTaskCount === 0) {
+                svgDiv.innerHTML = "";
+                const imgElement = document.createElement("img");
+                imgElement.style.height = "20px";
+                imgElement.src = browser.runtime.getURL("icons/iconoir/task-list.svg");
+                svgDiv.appendChild(imgElement);
+            } else if (svgDiv) {
+                svgDiv.innerHTML = progressCircleSVG;
             }
-            console.log(`Updated ${issueNumber}: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
+            console.log(`Updated existing issue counter: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
             return;
         }
 
         const counterDiv = document.createElement("div");
         counterDiv.style.display = "inline-flex";
         counterDiv.style.marginRight = "var(--base-size-4)";
-        counterDiv.style.maxWidth = "100%";
-        counterDiv.style.verticalAlign = "text-top";
-        counterDiv.style.height = "20px";
-        counterDiv.style.marginTop = "1px";
-        counterDiv.id = `tickback-counter-${issueNumber}`;
+        counterDiv.style.height = "100%";
+        counterDiv.id = "tickback-counter";
 
         const counterBorder = document.createElement("span");
         counterBorder.style.borderWidth = "1px";
         counterBorder.style.borderColor = "var(--borderColor-muted,var(--color-border-muted))";
         counterBorder.style.borderStyle = "solid";
-        counterBorder.style.maxWidth = "100%";
         counterBorder.style.borderRadius = "var(--borderRadius-full,624.9375rem)";
         counterBorder.style.fontSize = "var(--text-body-size-small,.75rem)";
-        counterBorder.style.display = "inline-flex";
-        counterBorder.style.alignItems = "center";
+        counterBorder.style.alignContent = "center";
+        counterBorder.id = "tickback-counter-border";
 
         const counterText = document.createElement("span");
         counterText.innerHTML = `${completedTaskCount} / ${allTaskCount}`;
-        counterText.style.marginRight = "6px";
-        counterText.style.fontSize = "0.75rem";
-        counterText.style.lineHeight = "20px";
+        counterText.style.marginRight = "8px";
+        counterText.style.fontSize = "1.5em";
         counterText.style.fontWeight = "var(--base-text-weight-semibold,600)";
-        counterText.style.lineHeight = "1";
-        counterText.id = `tickback-counter-text-${issueNumber}`;
+        counterText.style.verticalAlign = "super";
+        counterText.id = "tickback-counter-text";
 
         const svgDiv = document.createElement("div");
-        svgDiv.style.display = "inline-block";
-        svgDiv.style.width = "13px";
-        svgDiv.style.height = "13px";
-        svgDiv.style.marginRight = "5px";
-        svgDiv.style.marginLeft = "3px";
-        svgDiv.style.lineHeight = "1";
-        svgDiv.id = `tickback-svg-div-${issueNumber}`;
-        svgDiv.innerHTML = progressCircleSVG;
+        svgDiv.style.display = "inline-flex";
+        svgDiv.style.width = "20px";
+        svgDiv.style.height = "auto";
+        svgDiv.style.verticalAlign = "baseline";
+        svgDiv.style.margin = "0 5px";
+        svgDiv.id = "tickback-svg-div";
+        if (completedIcon && completedTaskCount === allTaskCount) {
+            const imgElement = document.createElement("img");
+            imgElement.style.height = "20px";
+            imgElement.src = browser.runtime.getURL("icons/iconoir/check-circle.svg");
+            svgDiv.appendChild(imgElement);
+        } else if (incompleteIcon && completedTaskCount === 0) {
+            const imgElement = document.createElement("img");
+            imgElement.style.height = "20px";
+            imgElement.src = browser.runtime.getURL("icons/iconoir/task-list.svg");
+            svgDiv.appendChild(imgElement);
+        } else if (svgDiv) {
+            svgDiv.innerHTML = progressCircleSVG;
+        }
 
         counterBorder.appendChild(svgDiv);
         counterBorder.appendChild(counterText);
         counterDiv.appendChild(counterBorder);
-        trailingBadgesContainer.prepend(counterDiv);
+        issueDivForBadge.appendChild(counterDiv);
 
-        console.log(`${issueNumber} - tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
-    });
-}
-
-function processOneIssue(apiData, issueNumber) {
-    const issueMetadata = document.querySelector('div[data-testid="issue-metadata-fixed"]');
-    const issueDivForBadge = issueMetadata.children[0].children[0];
-
-    if (!issueDivForBadge) {
-        console.warn(`No issue metadata found for issue #${issueNumber}`);
-        return;
-    }
-
-    const { allTaskCount, completedTaskCount, progress } = apiData;
-    const strokeDashoffset = ((100 - progress) / 100) * 50.28; // circumference -> radius 8
-    const progressCircleSVG = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" style="transform: rotate(-90deg)">
-            <circle r="8" cx="10" cy="10" fill="transparent" stroke="#444c56" stroke-width="3px"></circle>
-            <circle r="8" cx="10" cy="10" stroke="#52ec53" stroke-width="3px" stroke-linecap="round" stroke-dashoffset="${strokeDashoffset}px" fill="transparent" stroke-dasharray="50.28px"></circle>
-        </svg>`;
-
-    const oldCounterDiv = issueDivForBadge.querySelector("#tickback-counter");
-
-    if (oldCounterDiv) {
-        // Change values in existing counter
-        const counterText = oldCounterDiv.querySelector("#tickback-counter-text");
-        if (counterText) {
-            counterText.innerHTML = `${completedTaskCount} / ${allTaskCount}`;
-        }
-        const svgDiv = oldCounterDiv.querySelector("#tickback-svg-div");
-        if (svgDiv) {
-            svgDiv.innerHTML = progressCircleSVG;
-        }
-        console.log(`Updated existing issue counter: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
-        return;
-    }
-
-    const counterDiv = document.createElement("div");
-    counterDiv.style.display = "inline-flex";
-    counterDiv.style.marginRight = "var(--base-size-4)";
-    counterDiv.style.height = "100%";
-    counterDiv.id = "tickback-counter";
-
-    const counterBorder = document.createElement("span");
-    counterBorder.style.borderWidth = "1px";
-    counterBorder.style.borderColor = "var(--borderColor-muted,var(--color-border-muted))";
-    counterBorder.style.borderStyle = "solid";
-    counterBorder.style.borderRadius = "var(--borderRadius-full,624.9375rem)";
-    counterBorder.style.fontSize = "var(--text-body-size-small,.75rem)";
-    counterBorder.style.alignContent = "center";
-    counterBorder.id = "tickback-counter-border";
-
-    const counterText = document.createElement("span");
-    counterText.innerHTML = `${completedTaskCount} / ${allTaskCount}`;
-    counterText.style.marginRight = "8px";
-    counterText.style.fontSize = "1.5em";
-    counterText.style.fontWeight = "var(--base-text-weight-semibold,600)";
-    counterText.style.verticalAlign = "super";
-    counterText.id = "tickback-counter-text";
-
-    const svgDiv = document.createElement("div");
-    svgDiv.style.display = "inline-flex";
-    svgDiv.style.width = "20px";
-    svgDiv.style.height = "auto";
-    svgDiv.style.verticalAlign = "baseline";
-    svgDiv.style.margin = "0 5px";
-    svgDiv.id = "tickback-svg-div";
-    svgDiv.innerHTML = progressCircleSVG;
-
-    counterBorder.appendChild(svgDiv);
-    counterBorder.appendChild(counterText);
-    counterDiv.appendChild(counterBorder);
-    issueDivForBadge.appendChild(counterDiv);
-
-    const issueBody = document.querySelector('div[data-testid*="issue-body"]');
-    const markdownBody = issueBody.querySelector('div[data-testid*="markdown-body"]');
-    const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            const mutationTarget = markdownBody.children[0];
-            if (mutation.type === 'childList' && mutation.target === mutationTarget) {
-                console.log(`Issue #${issueNumber} task list changed, reloading...`);
-                loadSingleIssue(issueNumber);
-            }
+        const issueBody = document.querySelector('div[data-testid*="issue-body"]');
+        const markdownBody = issueBody.querySelector('div[data-testid*="markdown-body"]');
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                const mutationTarget = markdownBody.children[0];
+                if (mutation.type === 'childList' && mutation.target === mutationTarget) {
+                    console.log(`Issue #${issueNumber} task list changed, reloading...`);
+                    loadSingleIssue(issueNumber);
+                }
+            });
         });
-    });
-    observer.observe(markdownBody, {
-        childList: true,
-        subtree: true,
-        characterData: true
-    });
+        observer.observe(markdownBody, {
+            childList: true,
+            subtree: true,
+            characterData: true
+        });
 
-    console.log(`Single issue: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
+        console.log(`Single issue: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
+    });
 }
 
 // Issues page fetch

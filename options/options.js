@@ -27,3 +27,22 @@ function showMessage(type, message) {
         messageElement.className = "";
     }, 3000);
 }
+
+// Customization options
+document.getElementById("incomplete-icon-checkbox").addEventListener("change", function() {
+    const isChecked = this.checked;
+    browser.storage.local.set({ incompleteIcon: isChecked });
+});
+
+document.getElementById("completed-icon-checkbox").addEventListener("change", function() {
+    const isChecked = this.checked;
+    browser.storage.local.set({ completedIcon: isChecked });
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+    // Load customization options
+    browser.storage.local.get(["incompleteIcon", "completedIcon"]).then((data) => {
+        document.getElementById("incomplete-icon-checkbox").checked = data.incompleteIcon !== undefined ? data.incompleteIcon : true;
+        document.getElementById("completed-icon-checkbox").checked = data.completedIcon !== undefined ? data.completedIcon : true;
+    });
+});
