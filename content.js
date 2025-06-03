@@ -431,7 +431,7 @@ var observer = new MutationObserver(function (mutations) {
         //console.debug('HTML changed', mutation);
         if (mutation.target.nodeName === 'HTML' && mutation.type === 'childList') {
             // div.turbo-progress-bar
-            if (mutation.removedNodes[0] && mutation.removedNodes[0].classList.contains('turbo-progress-bar')) {
+            if (mutation.removedNodes[0]?.classList.contains('turbo-progress-bar')) {
                 console.log('Turbo progress bar removed');
                 if (document.location.pathname.endsWith('/issues') || document.location.pathname.endsWith('/issues/')) {
                     setTimeout(() => {
