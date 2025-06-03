@@ -34,5 +34,11 @@
         },
         "default_title": "TickBack",
         "default_popup": "popup/popup.html"
-    }
+    },
+    "web_accessible_resources": [
+        {
+            "resources": ["icons/iconoir/*.svg"],
+            "matches": ["https://github.com/*/*"]
+        }
+    ]
 }
