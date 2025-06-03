@@ -40,5 +40,10 @@
             "resources": ["icons/iconoir/*.svg"],
             "matches": ["https://github.com/*/*"]
         }
-    ]
+    ],
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "{45376c63-76e4-44b6-8121-242c4f764412}"
+        }
+    }
 }
