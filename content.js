@@ -400,12 +400,16 @@ async function loadIssuesPage() {
 
 // Single issue fetch
 function loadSingleIssue(issueNumber) {
-    const processedData = getSingleIssueBody();
-    if (!processedData) {
-        console.warn(`No task list found in issue #${issueNumber} body`);
-        return;
+    try {
+        const processedData = getSingleIssueBody();
+        if (!processedData) {
+            console.warn(`No task list found in issue #${issueNumber} body`);
+            return;
+        }
+        processOneIssue(processedData, issueNumber);
+    } catch (error) {
+        console.error(`Error processing issue #${issueNumber}:`, error);
     }
-    processOneIssue(processedData, issueNumber);
 }
 
 if (document.location.pathname.endsWith('/issues') || document.location.pathname.endsWith('/issues/')) {
@@ -415,8 +419,9 @@ if (document.location.pathname.endsWith('/issues') || document.location.pathname
 }
 
 // match "/issue/12" and "/issue/12/"
-if (document.location.pathname.match(/\/issues\/(\d+)\/?$/)) {
-    const issueNumber = document.location.pathname.match(/\/issues\/(\d+)\/?$/)[1];
+const regexIssuePage = /\/issues\/(\d+)\/?$/;
+if (regexIssuePage.test(document.location.pathname)) {
+    const issueNumber = regexIssuePage.exec(document.location.pathname)[1];
     console.log(`Issue number found: ${issueNumber}`);
 
     setTimeout(() => {
@@ -437,8 +442,8 @@ var observer = new MutationObserver(function (mutations) {
                     setTimeout(() => {
                         loadIssuesPage();
                     }, 1000);
-                } else if (document.location.pathname.match(/\/issues\/(\d+)\/?$/)) {
-                    const issueNumber = document.location.pathname.match(/\/issues\/(\d+)\/?$/)[1];
+                } else if (regexIssuePage.test(document.location.pathname)) {
+                    const issueNumber = regexIssuePage.exec(document.location.pathname)[1];
                     console.log(`Issue number found: ${issueNumber}`);
                     setTimeout(() => {
                         loadSingleIssue(issueNumber);
