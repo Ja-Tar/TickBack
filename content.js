@@ -165,6 +165,36 @@ function processIssues(issues) {
     return processedIssues;
 }
 
+function createProgressCircleSVG(strokeDashoffset) {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 20 20");
+    svg.style.transform = "rotate(-90deg)";
+    
+    const backgroundCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    backgroundCircle.setAttribute("r", "8");
+    backgroundCircle.setAttribute("cx", "10");
+    backgroundCircle.setAttribute("cy", "10");
+    backgroundCircle.setAttribute("fill", "transparent");
+    backgroundCircle.setAttribute("stroke", "#444c56");
+    backgroundCircle.setAttribute("stroke-width", "3px");
+    
+    const progressCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    progressCircle.setAttribute("r", "8");
+    progressCircle.setAttribute("cx", "10");
+    progressCircle.setAttribute("cy", "10");
+    progressCircle.setAttribute("stroke", "#52ec53");
+    progressCircle.setAttribute("stroke-width", "3px");
+    progressCircle.setAttribute("stroke-linecap", "round");
+    progressCircle.setAttribute("stroke-dashoffset", `${strokeDashoffset}px`);
+    progressCircle.setAttribute("fill", "transparent");
+    progressCircle.setAttribute("stroke-dasharray", "50.28px");
+    
+    svg.appendChild(backgroundCircle);
+    svg.appendChild(progressCircle);
+    
+    return svg;
+}
+
 function processWebIssues(apiData) {
     browser.storage.local.get('completedIcon').then((data) => {
         const completedIcon = data.completedIcon !== undefined ? data.completedIcon : true;
@@ -185,17 +215,13 @@ function processWebIssues(apiData) {
 
             const { allTaskCount, completedTaskCount, progress } = apiIssueData;
             const strokeDashoffset = ((100 - progress) / 100) * 50.28; // circumference -> radius 8
-            const progressCircleSVG = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" style="transform: rotate(-90deg)">
-            <circle r="8" cx="10" cy="10" fill="transparent" stroke="#444c56" stroke-width="3px"></circle>
-            <circle r="8" cx="10" cy="10" stroke="#52ec53" stroke-width="3px" stroke-linecap="round" stroke-dashoffset="${strokeDashoffset}px" fill="transparent" stroke-dasharray="50.28px"></circle>
-            </svg>`;
             const oldCounterDiv = document.getElementById(`tickback-counter-${issueNumber}`);
 
             if (oldCounterDiv) {
                 // Change values in existing counter
                 const oldCounterText = document.getElementById(`tickback-counter-text-${issueNumber}`);
                 if (oldCounterText) {
-                    oldCounterText.innerHTML = `${apiIssueData.completedTaskCount} / ${apiIssueData.allTaskCount}`;
+                    oldCounterText.textContent = `${apiIssueData.completedTaskCount} / ${apiIssueData.allTaskCount}`;
                 }
                 const oldSvgDiv = document.getElementById(`tickback-svg-div-${issueNumber}`);
                 if (completedIcon && completedTaskCount === allTaskCount) {
@@ -205,7 +231,8 @@ function processWebIssues(apiData) {
                     imgElement.src = browser.runtime.getURL("icons/iconoir/check-circle.svg");
                     oldSvgDiv.appendChild(imgElement);
                 } else if (oldSvgDiv) {
-                    oldSvgDiv.innerHTML = progressCircleSVG;
+                    oldSvgDiv.innerHTML = "";
+                    oldSvgDiv.appendChild(createProgressCircleSVG(strokeDashoffset));
                 }
                 console.log(`Updated ${issueNumber}: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
                 return;
@@ -231,7 +258,7 @@ function processWebIssues(apiData) {
             counterBorder.style.alignItems = "center";
 
             const counterText = document.createElement("span");
-            counterText.innerHTML = `${completedTaskCount} / ${allTaskCount}`;
+            counterText.textContent = `${completedTaskCount} / ${allTaskCount}`;
             counterText.style.marginRight = "6px";
             counterText.style.fontSize = "0.75rem";
             counterText.style.lineHeight = "20px";
@@ -254,7 +281,7 @@ function processWebIssues(apiData) {
                 imgElement.src = browser.runtime.getURL("icons/iconoir/check-circle.svg");
                 svgDiv.appendChild(imgElement);
             } else {
-                svgDiv.innerHTML = progressCircleSVG;
+                svgDiv.appendChild(createProgressCircleSVG(strokeDashoffset));
             }
 
             counterBorder.appendChild(svgDiv);
@@ -281,18 +308,13 @@ function processOneIssue(apiData, issueNumber) {
 
         const { allTaskCount, completedTaskCount, progress } = apiData;
         const strokeDashoffset = ((100 - progress) / 100) * 50.28; // circumference -> radius 8
-        const progressCircleSVG = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" style="transform: rotate(-90deg)">
-            <circle r="8" cx="10" cy="10" fill="transparent" stroke="#444c56" stroke-width="3px"></circle>
-            <circle r="8" cx="10" cy="10" stroke="#52ec53" stroke-width="3px" stroke-linecap="round" stroke-dashoffset="${strokeDashoffset}px" fill="transparent" stroke-dasharray="50.28px"></circle>
-        </svg>`;
-
         const oldCounterDiv = issueDivForBadge.querySelector("#tickback-counter");
 
         if (oldCounterDiv) {
             // Change values in existing counter
             const counterText = oldCounterDiv.querySelector("#tickback-counter-text");
             if (counterText) {
-                counterText.innerHTML = `${completedTaskCount} / ${allTaskCount}`;
+                counterText.textContent = `${completedTaskCount} / ${allTaskCount}`;
             }
             const svgDiv = oldCounterDiv.querySelector("#tickback-svg-div");
             if (completedIcon && completedTaskCount === allTaskCount) {
@@ -308,7 +330,8 @@ function processOneIssue(apiData, issueNumber) {
                 imgElement.src = browser.runtime.getURL("icons/iconoir/task-list.svg");
                 svgDiv.appendChild(imgElement);
             } else if (svgDiv) {
-                svgDiv.innerHTML = progressCircleSVG;
+                svgDiv.innerHTML = "";
+                svgDiv.appendChild(createProgressCircleSVG(strokeDashoffset));
             }
             console.log(`Updated existing issue counter: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
             return;
@@ -330,7 +353,7 @@ function processOneIssue(apiData, issueNumber) {
         counterBorder.id = "tickback-counter-border";
 
         const counterText = document.createElement("span");
-        counterText.innerHTML = `${completedTaskCount} / ${allTaskCount}`;
+        counterText.textContent = `${completedTaskCount} / ${allTaskCount}`;
         counterText.style.marginRight = "8px";
         counterText.style.fontSize = "1.5em";
         counterText.style.fontWeight = "var(--base-text-weight-semibold,600)";
@@ -355,7 +378,8 @@ function processOneIssue(apiData, issueNumber) {
             imgElement.src = browser.runtime.getURL("icons/iconoir/task-list.svg");
             svgDiv.appendChild(imgElement);
         } else if (svgDiv) {
-            svgDiv.innerHTML = progressCircleSVG;
+            svgDiv.innerHTML = "";
+            svgDiv.appendChild(createProgressCircleSVG(strokeDashoffset));
         }
 
         counterBorder.appendChild(svgDiv);
