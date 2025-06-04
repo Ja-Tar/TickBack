@@ -1,8 +1,8 @@
 // Save token to storage
-document.getElementById("save-token").addEventListener("click", function() {
+document.getElementById("save-token").addEventListener("click", () => {
     const token = document.getElementById("token").value;
     if (token) {
-        browser.storage.local.set({ token, wrongToken: false, rateLimitRemaining: 5000 }, function() {
+        browser.storage.local.set({ token, wrongToken: false, rateLimitRemaining: 5000 }, () => {
             showMessage(0, "Token saved successfully.");
         });
     } else {
@@ -10,7 +10,7 @@ document.getElementById("save-token").addEventListener("click", function() {
     }
 });
 
-document.getElementById("get-token").addEventListener("click", function() {
+document.getElementById("get-token").addEventListener("click", () => {
     // open new tab to github token page
     browser.tabs.create({
         url: "https://github.com/settings/tokens/new?description=TickBack&scopes=repo&default_expires_at=none"
@@ -39,7 +39,7 @@ document.getElementById("completed-icon-checkbox").addEventListener("change", fu
     browser.storage.local.set({ completedIcon: isChecked });
 });
 
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", () => {
     // Load customization options
     browser.storage.local.get(["incompleteIcon", "completedIcon"]).then((data) => {
         document.getElementById("incomplete-icon-checkbox").checked = data.incompleteIcon !== undefined ? data.incompleteIcon : true;
