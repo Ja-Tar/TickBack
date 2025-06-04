@@ -463,7 +463,7 @@ if (regexIssuePage.test(document.location.pathname)) {
 
 // Check for GitHub progress bar removal
 
-var observer = new MutationObserver(function (mutations) {
+const observer = new MutationObserver(function (mutations) {
     mutations.forEach(function (mutation) {
         //console.debug('HTML changed', mutation);
         if (mutation.target.nodeName === 'HTML' && mutation.type === 'childList') {

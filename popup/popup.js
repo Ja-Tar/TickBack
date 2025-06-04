@@ -8,11 +8,8 @@ observer.observe(progressBar, { attributes: true });
 
 // Check value of lastRateLimit than set the color of the progress bar
 function setProgressBarColor(value) {
-    const findStyle = document.getElementById('progressBarStyle');
-    let style;
-    if (findStyle) {
-        style = findStyle;
-    } else {
+    let style = document.getElementById('progressBarStyle');
+    if (!style) {
         style = document.createElement('style');
         style.id = 'progressBarStyle';
         document.head.appendChild(style);
