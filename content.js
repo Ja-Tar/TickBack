@@ -1,17 +1,22 @@
 // Main script
 
-let lastRateLimitRemaining = null;
-let lastRateLimitReset = null;
-
 async function getApiIssues(
     token,
     owner = 'Ja-Tar',
     repo = 'TickBack',
     query = 'state:open sort:created-desc type:issue'
 ) {
-    // Stop if rate limit is reached
-    if (lastRateLimitRemaining !== null && lastRateLimitRemaining <= 5) {
-        const resetTime = new Date(lastRateLimitReset * 1000);
+    const rateLimitInfo = await browser.storage.local.get(['wrongToken', 'rateLimitRemaining', 'rateLimitReset'])
+    let wrongToken = rateLimitInfo.wrongToken;
+    let rateLimitRemaining = rateLimitInfo.rateLimitRemaining;
+    let rateLimitReset = rateLimitInfo.rateLimitReset;
+
+    // Stop if rate limit is reached or wrong token
+    if (wrongToken === true) {
+        console.warn('Rate limit is too low, change token');
+        return [];
+    } else if (rateLimitRemaining <= 5) { 
+        const resetTime = new Date(rateLimitReset * 1000);
         if (resetTime <= new Date()) {
             console.warn('Rate limit reached, but reset time has passed. Fetching data...');
         } else {
@@ -20,15 +25,14 @@ async function getApiIssues(
         }
     }
 
-    try {
-        const response = await fetch('https://api.github.com/graphql', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                query: `
+    const response = await fetch('https://api.github.com/graphql', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+            query: `
                     query search {
                         search(first: 25, type: ISSUE, query: "repo:${owner}/${repo} ${query}") {
                             nodes {
@@ -40,45 +44,42 @@ async function getApiIssues(
                     }
                 }
                 `
-            })
-        });
+        })
+    });
 
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
+    const data = await response.json();
 
-        // Check for rate limit headers
-        const rateLimitRemaining = response.headers.get('X-RateLimit-Remaining');
-        const rateLimitReset = response.headers.get('X-RateLimit-Reset');
-
-        if (rateLimitRemaining !== null && rateLimitReset !== null) {
-            lastRateLimitRemaining = parseInt(rateLimitRemaining, 10);
-            lastRateLimitReset = parseInt(rateLimitReset, 10);
-            console.log(`Rate limit remaining: ${lastRateLimitRemaining}`);
-        }
-
-        browser.storage.local.set({
-            lastRateLimitRemaining: lastRateLimitRemaining,
-            lastRateLimitReset: lastRateLimitReset
-        }).catch((error) => {
-            console.error('Error saving session data:', error);
-        });
-
-        const data = await response.json();
-        const combinedData = data.data.search.nodes.map(issue => ({
-            body: issue.body,
-            number: issue.number
-        }));
-        return combinedData.filter(issue => {
-            if (!issue.body || issue.body.trim() === '') {
-                console.warn(`Issue #${issue.number} has no body, skipping...`);
-                return false;
-            }
-            return true;
-        });
-    } catch (error) {
-        console.error('Error:', error);
+    // Check for rate limit headers
+    if (data.message?.includes("Bad credentials")) {
+        wrongToken = true;
     }
+    rateLimitRemaining = parseInt(response.headers.get('X-RateLimit-Remaining'), 10);
+    rateLimitReset = parseInt(response.headers.get('X-RateLimit-Reset'), 10);
+
+    browser.storage.local.set({
+        wrongToken,
+        rateLimitRemaining,
+        rateLimitReset
+    }).catch((error) => {
+        console.error('Error saving session data:', error);
+    });
+
+    if (!response.ok) {
+        throw new Error('Network response was not ok');
+    }
+
+    const combinedData = data.data.search.nodes.map(issue => ({
+        body: issue.body,
+        number: issue.number
+    }));
+    return combinedData.filter(issue => {
+        if (!issue.body || issue.body.trim() === '') {
+            console.warn(`Issue #${issue.number} has no body, skipping...`);
+            return false;
+        }
+        return true;
+    });
+
 }
 
 function getSingleIssueBody() {
@@ -169,7 +170,7 @@ function createProgressCircleSVG(strokeDashoffset) {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("viewBox", "0 0 20 20");
     svg.style.transform = "rotate(-90deg)";
-    
+
     const backgroundCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     backgroundCircle.setAttribute("r", "8");
     backgroundCircle.setAttribute("cx", "10");
@@ -177,7 +178,7 @@ function createProgressCircleSVG(strokeDashoffset) {
     backgroundCircle.setAttribute("fill", "transparent");
     backgroundCircle.setAttribute("stroke", "#444c56");
     backgroundCircle.setAttribute("stroke-width", "3px");
-    
+
     const progressCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     progressCircle.setAttribute("r", "8");
     progressCircle.setAttribute("cx", "10");
@@ -188,10 +189,10 @@ function createProgressCircleSVG(strokeDashoffset) {
     progressCircle.setAttribute("stroke-dashoffset", `${strokeDashoffset}px`);
     progressCircle.setAttribute("fill", "transparent");
     progressCircle.setAttribute("stroke-dasharray", "50.28px");
-    
+
     svg.appendChild(backgroundCircle);
     svg.appendChild(progressCircle);
-    
+
     return svg;
 }
 
@@ -463,8 +464,8 @@ if (regexIssuePage.test(document.location.pathname)) {
 
 // Check for GitHub progress bar removal
 
-const observer = new MutationObserver(function (mutations) {
-    mutations.forEach(function (mutation) {
+const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
         //console.debug('HTML changed', mutation);
         if (mutation.target.nodeName === 'HTML' && mutation.type === 'childList') {
             // div.turbo-progress-bar

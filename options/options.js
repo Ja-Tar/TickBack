@@ -2,7 +2,7 @@
 document.getElementById("save-token").addEventListener("click", function() {
     const token = document.getElementById("token").value;
     if (token) {
-        browser.storage.local.set({ token: token }, function() {
+        browser.storage.local.set({ token, wrongToken: false, rateLimitRemaining: 5000 }, function() {
             showMessage(0, "Token saved successfully.");
         });
     } else {

@@ -20,7 +20,7 @@
             margin-top: 0px;
         }
 
-        #lastRateLimitDiv {
+        #rateLimitDiv {
             margin-bottom: 15px;
         }
 
@@ -42,26 +42,26 @@
             box-sizing: border-box;
         }
 
-        #lastRateLimitDivBox {
+        #rateLimitDivBox {
             display: flex;
             align-items: center;
             gap: 10px;
             padding-right: 8px;
         }
 
-        #lastRateLimit {
+        #rateLimit {
             width: 100%;
             height: 20px;
             appearance: none;
             border-radius: 5px;
         }
 
-        #lastRateLimitValue {
+        #rateLimitValue {
             font-weight: bold;
             min-width: 10px;
         }
 
-        #lastRateLimitReset {
+        #rateLimitReset {
             font-weight: bold;
             min-width: 10px;
             background-color: transparent;
@@ -88,16 +88,16 @@
 <body>
     <h1>API Status</h1>
     <div id="infoDiv" style="display: none; color: #f44336;"></div>
-    <div id="lastRateLimitDiv">
-        <label for="lastRateLimit">Quota left:</label>
-        <div id="lastRateLimitDivBox">
-            <progress id="lastRateLimit" value="0" max="100" class="lowProgress"></progress>
-            <span id="lastRateLimitValue">0%</span>
+    <div id="rateLimitDiv">
+        <label for="rateLimit">Quota left:</label>
+        <div id="rateLimitDivBox">
+            <progress id="rateLimit" value="0" max="100" class="lowProgress"></progress>
+            <span id="rateLimitValue">0%</span>
         </div>
     </div>
-    <div id="lastRateLimitResetDiv" style="color: transparent;">
-        <label for="lastRateLimitReset">Resets on:</label>
-        <span id="lastRateLimitReset"></span>
+    <div id="rateLimitResetDiv" style="color: transparent;">
+        <label for="rateLimitReset">Resets on:</label>
+        <span id="rateLimitReset"></span>
     </div>
     <script src="popup.js"></script>
 </body>

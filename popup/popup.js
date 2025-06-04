@@ -1,12 +1,12 @@
 // observe the progress bar for changes
-const progressBar = document.getElementById('lastRateLimit');
+const progressBar = document.getElementById('rateLimit');
 const observer = new MutationObserver(() => {
     const value = parseInt(progressBar.value, 10);
     setProgressBarColor(value);
 });
 observer.observe(progressBar, { attributes: true });
 
-// Check value of lastRateLimit than set the color of the progress bar
+// Check value of rateLimit than set the color of the progress bar
 function setProgressBarColor(value) {
     let style = document.getElementById('progressBarStyle');
     if (!style) {
@@ -31,38 +31,45 @@ function setProgressBarColor(value) {
 }
 
 function updateProgressBar() {
-    browser.storage.local.get(['lastRateLimitRemaining', 'lastRateLimitReset', 'token']).then((data) => {
-        const resetDiv = document.getElementById('lastRateLimitResetDiv');
+    browser.storage.local.get(['rateLimitRemaining', 'rateLimitReset', 'token', 'wrongToken']).then((data) => {
+        const resetDiv = document.getElementById('rateLimitResetDiv');
         const infoDiv = document.getElementById('infoDiv');
         const token = data.token;
-        if (!token) {
+        const wrongToken = data.wrongToken;
+        let rateLimitRemaining = data.rateLimitRemaining;
+        const rateLimitReset = data.rateLimitReset;
+        if (!token || wrongToken) {
             resetDiv.style.color = 'transparent';
             progressBar.value = 0;
-            document.getElementById('lastRateLimitValue').textContent = '0%';
-            infoDiv.innerHTML = '<p>GitHub token NOT set</p>';
+            document.getElementById('rateLimitValue').textContent = '0%';
+            if (!token) {
+                infoDiv.innerHTML = '<p>GitHub token NOT set</p>';
+            } else {
+                infoDiv.innerHTML = '<p>GitHub token is wrong</p>';
+            }
             infoDiv.style.display = 'block';
             
             return;
         }
 
-        if (data.lastRateLimitRemaining === undefined) {
-            data.lastRateLimitRemaining = 5000; // Default value if not set
-            browser.storage.local.set({ lastRateLimitRemaining: 5000 });
+        if (rateLimitRemaining === undefined) {
+            rateLimitRemaining = 5000; // Default value if not set
+            browser.storage.local.set({ rateLimitRemaining: 5000 });
             resetDiv.style.color = 'transparent';
         }
 
-        const percentageSpan = document.getElementById('lastRateLimitValue');
-        const limitRemaining = Math.round((data.lastRateLimitRemaining / 5000) * 100);
+        const percentageSpan = document.getElementById('rateLimitValue');
+        const limitRemaining = Math.round((rateLimitRemaining / 5000) * 100);
         progressBar.value = limitRemaining;
         percentageSpan.textContent = `${limitRemaining}%`;
-        
-        if (data.lastRateLimitReset !== undefined && data.lastRateLimitRemaining !== undefined) {
-            const resetSpan = document.getElementById('lastRateLimitReset');
-            const resetTime = new Date(data.lastRateLimitReset * 1000);
+
+        if (rateLimitReset !== undefined && rateLimitRemaining !== undefined) {
+            const resetSpan = document.getElementById('rateLimitReset');
+            const resetTime = new Date(rateLimitReset * 1000);
             const now = new Date();
             if (resetTime < now) {
                 resetDiv.style.color = 'transparent';
-                browser.storage.local.set({ lastRateLimitRemaining: 100 });
+                browser.storage.local.set({ rateLimitRemaining: 100 });
             } else {
                 resetSpan.innerText = resetTime.toLocaleString();
                 resetDiv.style.color = 'inherit';
