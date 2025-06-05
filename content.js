@@ -524,3 +524,18 @@ observer.observe(document, {
     subtree: true,
     characterData: true
 });
+
+// Add event listener for going back in history
+window.addEventListener('popstate', () => {
+    //console.log('History changed');
+    if (document.location.pathname.endsWith('/issues') || document.location.pathname.endsWith('/issues/')) {
+        setTimeout(() => {
+            loadIssuesPage();
+        }, 2000);
+    } else if (regexIssuePage.test(document.location.pathname)) {
+        const issueNumber = regexIssuePage.exec(document.location.pathname)[1];
+        setTimeout(() => {
+            loadSingleIssue(issueNumber);
+        }, 1000);
+    }
+});
