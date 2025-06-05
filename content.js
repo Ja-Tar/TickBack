@@ -221,6 +221,7 @@ function processWebIssues(apiData) {
         const issueNodes = document.querySelectorAll("li[role='listitem']");
         issueNodes.forEach((issue) => {
             const title = issue.querySelector("[class*='Title-module__container']");
+            if (!title) return;
             const issueNumber = issue.querySelector("span[class*='defaultNumberDescription']").textContent.trim().split('#')[1];
             const trailingBadgesContainer = title.querySelector("[class*='Title-module__trailingBadgesContainer']");
 
