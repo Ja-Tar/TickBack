@@ -4,12 +4,14 @@ async function getApiIssues(
     token,
     owner = 'Ja-Tar',
     repo = 'TickBack',
-    query = 'state:open sort:created-desc type:issue'
+    query = 'state:open sort:created-desc type:issue',
+    page = 1
 ) {
     const rateLimitInfo = await browser.storage.local.get(['wrongToken', 'rateLimitRemaining', 'rateLimitReset'])
     let wrongToken = rateLimitInfo.wrongToken;
     let rateLimitRemaining = rateLimitInfo.rateLimitRemaining;
     let rateLimitReset = rateLimitInfo.rateLimitReset;
+    let after = "";
 
     // Stop if rate limit is reached or wrong token
     if (wrongToken === true) {
@@ -25,6 +27,11 @@ async function getApiIssues(
         }
     }
 
+    if (page > 1) {
+        // example value (base64): "cursor:25" -> "Y3Vyc29yOjI1"
+        after = btoa(`cursor:${page * 25 - 25}`);
+    }
+
     const response = await fetch('https://api.github.com/graphql', {
         method: 'POST',
         headers: {
@@ -34,15 +41,15 @@ async function getApiIssues(
         body: JSON.stringify({
             query: `
                     query search {
-                        search(first: 25, type: ISSUE, query: "repo:${owner}/${repo} ${query}") {
+                        search(first: 25, after: "${after}", type: ISSUE, query: "repo:${owner}/${repo} ${query}") {
                             nodes {
-    	                        ... on Issue {
-        	                        body
-        	                        number
-      	                    }
+                                ... on Issue {
+                                    body
+                                    number
+                                }
+                            }
                         }
                     }
-                }
                 `
         })
     });
@@ -147,6 +154,18 @@ function getSearchFilters() {
         console.warn('No search filters found in URL');
     }
     return 'state:open sort:created-desc type:issue';
+}
+
+function getPageNumber() {
+    const url = decodeURI(document.location.href);
+    const match = url.match(/github\.com\/[^/]+\/[^/]+\/issues\?page=(\d+)/);
+    if (match) {
+        const pageNumber = parseInt(match[1], 10);
+        if (!isNaN(pageNumber)) {
+            return pageNumber;
+        }
+    }
+    return 1; // Default to page 1 if not found
 }
 
 function processIssues(issues) {
@@ -420,7 +439,7 @@ function loadIssuesPage() {
         const token = result.token;
         if (token) {
             const { owner, repo } = getRepInfo();
-            getApiIssues(token, owner, repo, getSearchFilters()).then((apiIssues) => {
+            getApiIssues(token, owner, repo, getSearchFilters(), getPageNumber()).then((apiIssues) => {
                 if (apiIssues && apiIssues.length > 0) {
                     console.debug('Issues retrieved from API:', apiIssues.length);
                     processWebIssues(processIssues(apiIssues));
