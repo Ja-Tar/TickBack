@@ -126,7 +126,7 @@ function getRepInfo() {
     if (match) {
         const owner = match[1];
         const repo = match[2];
-        console.log(`Repository Owner: ${owner}, Repository Name: ${repo}`);
+        //console.log(`Repository Owner: ${owner}, Repository Name: ${repo}`);
         return { owner, repo };
     } else {
         console.error('Could not extract repository information from URL');
@@ -141,7 +141,7 @@ function getSearchFilters() {
         const query = match[1];
         const filters = decodeURIComponent(query).split(' ');
         filters.push('type:issue');
-        console.log(`Search filters found in URL: ${filters}`);
+        console.debug(`Search filters found in URL: ${filters}`);
         return filters.filter(filter => !filter.startsWith('is:')).join(" ");
     } else {
         console.warn('No search filters found in URL');
@@ -235,7 +235,7 @@ function processWebIssues(apiData) {
                     oldSvgDiv.innerHTML = "";
                     oldSvgDiv.appendChild(createProgressCircleSVG(strokeDashoffset));
                 }
-                console.log(`Updated ${issueNumber}: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
+                console.debug(`Updated ${issueNumber}: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
                 return;
             }
 
@@ -290,7 +290,7 @@ function processWebIssues(apiData) {
             counterDiv.appendChild(counterBorder);
             trailingBadgesContainer.prepend(counterDiv);
 
-            console.log(`${issueNumber} - tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
+            console.debug(`${issueNumber} - tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
         });
     });
 }
@@ -334,7 +334,7 @@ function processOneIssue(apiData, issueNumber) {
                 svgDiv.innerHTML = "";
                 svgDiv.appendChild(createProgressCircleSVG(strokeDashoffset));
             }
-            console.log(`Updated existing issue counter: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
+            console.debug(`Updated existing issue counter: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
             return;
         }
 
@@ -394,7 +394,7 @@ function processOneIssue(apiData, issueNumber) {
             mutations.forEach((mutation) => {
                 const mutationTarget = markdownBody.children[0];
                 if (mutation.type === 'childList' && mutation.target === mutationTarget) {
-                    console.log(`Issue #${issueNumber} task list changed, reloading...`);
+                    //console.log(`Issue #${issueNumber} task list changed, reloading...`);
                     loadSingleIssue(issueNumber);
                 }
             });
@@ -405,7 +405,7 @@ function processOneIssue(apiData, issueNumber) {
             characterData: true
         });
 
-        console.log(`Single issue: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
+        console.debug(`Single issue: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
     });
 }
 
@@ -417,10 +417,10 @@ function loadIssuesPage() {
             const { owner, repo } = getRepInfo();
             getApiIssues(token, owner, repo, getSearchFilters()).then((apiIssues) => {
                 if (apiIssues && apiIssues.length > 0) {
-                    console.log('Issues retrieved from API:', apiIssues.length);
+                    console.debug('Issues retrieved from API:', apiIssues.length);
                     processWebIssues(processIssues(apiIssues));
                 } else {
-                    console.log('No issues found or empty response');
+                    console.warn('No issues found or empty response');
                 }
             }).catch((error) => {
                 console.error('Error fetching issues:', error);
