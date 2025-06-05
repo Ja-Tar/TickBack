@@ -388,24 +388,29 @@ function processOneIssue(apiData, issueNumber) {
         counterDiv.appendChild(counterBorder);
         issueDivForBadge.appendChild(counterDiv);
 
-        const issueBody = document.querySelector('div[data-testid*="issue-body"]');
-        const markdownBody = issueBody.querySelector('div[data-testid*="markdown-body"]');
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                const mutationTarget = markdownBody.children[0];
-                if (mutation.type === 'childList' && mutation.target === mutationTarget) {
-                    //console.log(`Issue #${issueNumber} task list changed, reloading...`);
-                    loadSingleIssue(issueNumber);
-                }
-            });
-        });
-        observer.observe(markdownBody, {
-            childList: true,
-            subtree: true,
-            characterData: true
-        });
+        observeIssueBodyChanges(issueNumber);
 
         console.debug(`Single issue: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
+    });
+}
+
+// Observe changes in the issue body to reload the issue when task list changes
+function observeIssueBodyChanges(issueNumber) {
+    const issueBody = document.querySelector('div[data-testid*="issue-body"]');
+    const markdownBody = issueBody.querySelector('div[data-testid*="markdown-body"]');
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            const mutationTarget = markdownBody.children[0];
+            if (mutation.type === 'childList' && mutation.target === mutationTarget) {
+                //console.log(`Issue #${issueNumber} task list changed, reloading... (OBSERVER)`);
+                loadSingleIssue(issueNumber);
+            }
+        });
+    });
+    observer.observe(markdownBody, {
+        childList: true,
+        subtree: true,
+        characterData: true
     });
 }
 
@@ -466,7 +471,7 @@ if (regexIssuePage.test(document.location.pathname)) {
 
 const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
-        //console.debug('HTML changed', mutation);
+        //console.log('HTML changed', mutation, mutation.target.nodeName);
         if (mutation.target.nodeName === 'HTML' && mutation.type === 'childList') {
             // div.turbo-progress-bar
             if (mutation.removedNodes[0]?.classList.contains('turbo-progress-bar')) {
@@ -487,6 +492,7 @@ const observer = new MutationObserver((mutations) => {
                 const issueNumber = regexIssuePage.exec(document.location.pathname)[1];
                 setTimeout(() => {
                     loadSingleIssue(issueNumber);
+                    observeIssueBodyChanges(issueNumber);
                 }, 1000);
             }
         }
