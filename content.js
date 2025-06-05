@@ -15,7 +15,7 @@ async function getApiIssues(
     if (wrongToken === true) {
         console.warn('Rate limit is too low, change token');
         return [];
-    } else if (rateLimitRemaining <= 5) { 
+    } else if (rateLimitRemaining <= 5) {
         const resetTime = new Date(rateLimitReset * 1000);
         if (resetTime <= new Date()) {
             console.warn('Rate limit reached, but reset time has passed. Fetching data...');
@@ -455,7 +455,7 @@ if (document.location.pathname.endsWith('/issues') || document.location.pathname
 const regexIssuePage = /\/issues\/(\d+)\/?$/;
 if (regexIssuePage.test(document.location.pathname)) {
     const issueNumber = regexIssuePage.exec(document.location.pathname)[1];
-    console.log(`Issue number found: ${issueNumber}`);
+    //console.log(`Issue number found: ${issueNumber}`);
 
     setTimeout(() => {
         loadSingleIssue(issueNumber);
@@ -470,18 +470,24 @@ const observer = new MutationObserver((mutations) => {
         if (mutation.target.nodeName === 'HTML' && mutation.type === 'childList') {
             // div.turbo-progress-bar
             if (mutation.removedNodes[0]?.classList.contains('turbo-progress-bar')) {
-                console.log('Turbo progress bar removed');
+                //console.log('Turbo progress bar removed');
                 if (document.location.pathname.endsWith('/issues') || document.location.pathname.endsWith('/issues/')) {
                     setTimeout(() => {
                         loadIssuesPage();
                     }, 1000);
                 } else if (regexIssuePage.test(document.location.pathname)) {
                     const issueNumber = regexIssuePage.exec(document.location.pathname)[1];
-                    console.log(`Issue number found: ${issueNumber}`);
                     setTimeout(() => {
                         loadSingleIssue(issueNumber);
                     }, 1000);
                 }
+            }
+        } else if (mutation.type === 'childList' && mutation.addedNodes[0]?.id === 'issue-body-viewer') {
+            if (regexIssuePage.test(document.location.pathname)) {
+                const issueNumber = regexIssuePage.exec(document.location.pathname)[1];
+                setTimeout(() => {
+                    loadSingleIssue(issueNumber);
+                }, 1000);
             }
         }
     });
