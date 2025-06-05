@@ -29,6 +29,7 @@ function showMessage(type, message) {
 }
 
 // Customization options
+
 document.getElementById("incomplete-icon-checkbox").addEventListener("change", function() {
     const isChecked = this.checked;
     browser.storage.local.set({ incompleteIcon: isChecked });
@@ -37,6 +38,16 @@ document.getElementById("incomplete-icon-checkbox").addEventListener("change", f
 document.getElementById("completed-icon-checkbox").addEventListener("change", function() {
     const isChecked = this.checked;
     browser.storage.local.set({ completedIcon: isChecked });
+});
+
+document.getElementById("reset-customization").addEventListener("click", () => {
+    browser.storage.local.set({
+        incompleteIcon: true,
+        completedIcon: true
+    }).then(() => {
+        document.getElementById("incomplete-icon-checkbox").checked = true;
+        document.getElementById("completed-icon-checkbox").checked = true;
+    });
 });
 
 document.addEventListener("DOMContentLoaded", () => {
