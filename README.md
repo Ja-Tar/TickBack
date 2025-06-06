@@ -4,6 +4,8 @@
 
 Simple browser add-on for GitHub to add back the tasks count on issues page.
 
+<img src="https://github.com/user-attachments/assets/d666c9f3-7ce8-4ed9-8e71-948ed3c15d8f" alt="drawing" width="500"/>
+
 ## Project Status
 
 - [x] Show tasks count on the issues page (__API token required__)
