@@ -1,4 +1,6 @@
-# TickBack
+![TickBack](https://github.com/user-attachments/assets/e404f8b3-2a68-4b63-b6a9-e6c30c7957b3)
+
+---
 
 Simple browser add-on for GitHub to add back the tasks count on issues page.
 
