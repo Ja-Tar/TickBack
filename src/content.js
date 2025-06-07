@@ -142,8 +142,8 @@ function getRepInfo() {
 }
 
 function getSearchFilters() {
-    const url = decodeURI(document.location.href);
-    const match = url.match(/github\.com\/[^/]+\/[^/]+\/issues\?q=(.*)/);
+    const url = decodeURIComponent(document.location.search);
+    const match = url.match(/q=(.*?)(?:&|$|\/)/);
     if (match) {
         const query = match[1];
         const filters = decodeURIComponent(query).split(' ');
@@ -157,8 +157,8 @@ function getSearchFilters() {
 }
 
 function getPageNumber() {
-    const url = decodeURI(document.location.href);
-    const match = url.match(/github\.com\/[^/]+\/[^/]+\/issues\?page=(\d+)/);
+    const url = decodeURI(document.location.search);
+    const match = url.match(/page=(.*?)(?:&|$|\/)/);
     if (match) {
         const pageNumber = parseInt(match[1], 10);
         if (!isNaN(pageNumber)) {
@@ -470,21 +470,21 @@ function loadSingleIssue(issueNumber) {
     }
 }
 
-if (document.location.pathname.endsWith('/issues') || document.location.pathname.endsWith('/issues/')) {
-    setTimeout(() => {
+// match "/issues" and "/issues/"
+const regexIssuesPage = /\/issues\/?$/;
+if (regexIssuesPage.test(document.location.pathname)) {
+    document.addEventListener('DOMContentLoaded', () => {
         loadIssuesPage();
-    }, 1000);
+    });
 }
 
 // match "/issue/12" and "/issue/12/"
 const regexIssuePage = /\/issues\/(\d+)\/?$/;
 if (regexIssuePage.test(document.location.pathname)) {
     const issueNumber = regexIssuePage.exec(document.location.pathname)[1];
-    //console.log(`Issue number found: ${issueNumber}`);
-
-    setTimeout(() => {
+    document.addEventListener('DOMContentLoaded', () => {
         loadSingleIssue(issueNumber);
-    }, 1000);
+    });
 }
 
 // Check for GitHub progress bar removal
@@ -496,7 +496,7 @@ const observer = new MutationObserver((mutations) => {
             // div.turbo-progress-bar
             if (mutation.removedNodes[0]?.classList.contains('turbo-progress-bar')) {
                 //console.log('Turbo progress bar removed');
-                if (document.location.pathname.endsWith('/issues') || document.location.pathname.endsWith('/issues/')) {
+                if (regexIssuesPage.test(document.location.pathname)) {
                     setTimeout(() => {
                         loadIssuesPage();
                     }, 1000);
