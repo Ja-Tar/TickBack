@@ -23,7 +23,7 @@ Simple browser add-on for GitHub to add back the tasks count on issues page.
 
 **FOR NOW ADD-ON IS NOT PUBLISHED ON THE FIREFOX ADD-ONS SITE, SO YOU NEED TO INSTALL IT MANUALLY**
 
-1. Download the latest release from the [GitHub Releases](https://github.com/yourusername/TickBack/releases) page.
+1. Download the latest release from the [GitHub Releases](https://github.com/Ja-Tar/TickBack/releases) page.
 2. Open Firefox and type `about:debugging` in the address bar.
 3. Click on "This Firefox" in the sidebar.
 4. Click on "Load Temporary Add-on".
