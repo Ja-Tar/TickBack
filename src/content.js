@@ -406,7 +406,11 @@ function processOneIssue(apiData, issueNumber) {
         counterBorder.appendChild(svgDiv);
         counterBorder.appendChild(counterText);
         counterDiv.appendChild(counterBorder);
-        issueDivForBadge.appendChild(counterDiv);
+        if (issueDivForBadge.children.length > 1) {
+            issueDivForBadge.insertBefore(counterDiv, issueDivForBadge.children[1]);
+        } else {
+            issueDivForBadge.appendChild(counterDiv);
+        }
 
         observeIssueBodyChanges(issueNumber);
 
