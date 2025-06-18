@@ -298,7 +298,9 @@ function processOneIssue(apiData, issueNumber) {
         const completedIcon = data.completedIcon !== undefined ? data.completedIcon : true;
         const incompleteIcon = data.incompleteIcon !== undefined ? data.incompleteIcon : true;
         const issueMetadata = document.querySelector('div[data-testid="issue-metadata-fixed"]');
+        const issueScrollMetadata = document.querySelector('div[data-testid="issue-metadata-sticky"]');
         const issueDivForBadge = issueMetadata.children[0].children[0];
+        const issueScrollDivForBadge = issueScrollMetadata.children[0].children[0].children[1].children[1];
 
         if (!issueDivForBadge) {
             console.warn(`No issue metadata found for issue #${issueNumber}`);
@@ -308,13 +310,18 @@ function processOneIssue(apiData, issueNumber) {
         const { allTaskCount, completedTaskCount, progress } = apiData;
         const strokeDashoffset = ((100 - progress) / 100) * 50.28; // circumference -> radius 8
         const oldCounterDiv = issueDivForBadge.querySelector("#tickback-counter");
+        const oldStickyCounterDiv = issueScrollDivForBadge.querySelector("#tickback-sticky-counter");
 
         if (oldCounterDiv) {
             // Change values in existing counter
             const counterText = oldCounterDiv.querySelector("#tickback-counter-text");
-            if (counterText) {
+            const stickyCounterText = oldStickyCounterDiv.querySelector("#tickback-sticky-counter-text");
+
+            if (counterText && stickyCounterText) {
                 counterText.textContent = `${completedTaskCount} / ${allTaskCount}`;
+                stickyCounterText.textContent = `${completedTaskCount} / ${allTaskCount}`;
             }
+            
             const svgDiv = oldCounterDiv.querySelector("#tickback-svg-div");
             if (completedIcon && completedTaskCount === allTaskCount) {
                 svgDiv.innerHTML = "";
@@ -335,6 +342,8 @@ function processOneIssue(apiData, issueNumber) {
             console.debug(`Updated existing issue counter: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
             return;
         }
+
+        // Assemble the main counter div ===
 
         const counterDiv = document.createElement("div");
         counterDiv.style.display = "inline-flex";
@@ -389,6 +398,45 @@ function processOneIssue(apiData, issueNumber) {
         } else {
             issueDivForBadge.appendChild(counterDiv);
         }
+
+        // Assemble the sticky metadata counter ===
+
+        const stickyCounterDiv = document.createElement("div");
+        stickyCounterDiv.style.display = "inline-flex";
+        stickyCounterDiv.style.height = "100%";
+        stickyCounterDiv.id = "tickback-sticky-counter";
+
+        const stickyCounterText = document.createElement("span");
+        stickyCounterText.textContent = `${completedTaskCount} / ${allTaskCount}`;
+        stickyCounterText.style.fontWeight = "var(--base-text-weight-semibold,600)";
+        stickyCounterText.style.verticalAlign = "super";
+        stickyCounterText.id = "tickback-sticky-counter-text";
+
+        const stickySvgDiv = document.createElement("div");
+        stickySvgDiv.style.display = "inline-flex";
+        stickySvgDiv.style.width = "16px";
+        stickySvgDiv.style.height = "auto";
+        stickySvgDiv.style.verticalAlign = "baseline";
+        stickySvgDiv.style.margin = "0 5px";
+        stickySvgDiv.id = "tickback-sticky-svg-div";
+        if (completedIcon && completedTaskCount === allTaskCount) {
+            const imgElement = document.createElement("img");
+            imgElement.style.height = "16px";
+            imgElement.src = browser.runtime.getURL("icons/iconoir/check-circle.svg");
+            stickySvgDiv.appendChild(imgElement);
+        } else if (incompleteIcon && completedTaskCount === 0) {
+            const imgElement = document.createElement("img");
+            imgElement.style.height = "16px";
+            imgElement.src = browser.runtime.getURL("icons/iconoir/task-list.svg");
+            stickySvgDiv.appendChild(imgElement);
+        } else if (stickySvgDiv) {
+            stickySvgDiv.innerHTML = "";
+            stickySvgDiv.appendChild(createProgressCircleSVG(strokeDashoffset));
+        }
+        
+        stickyCounterDiv.appendChild(stickySvgDiv);
+        stickyCounterDiv.appendChild(stickyCounterText);
+        issueScrollDivForBadge.appendChild(stickyCounterDiv);
 
         observeIssueBodyChanges(issueNumber);
 
