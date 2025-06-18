@@ -248,7 +248,7 @@ function processWebIssues(apiData) {
                 if (completedIcon && completedTaskCount === allTaskCount) {
                     oldSvgDiv.innerHTML = "";
                     const imgElement = document.createElement("img");
-                    imgElement.style.height = "inherit";
+                    imgElement.classList.add("tickback-svg-img");
                     imgElement.src = browser.runtime.getURL("icons/iconoir/check-circle.svg");
                     oldSvgDiv.appendChild(imgElement);
                 } else if (oldSvgDiv) {
@@ -260,45 +260,23 @@ function processWebIssues(apiData) {
             }
 
             const counterDiv = document.createElement("div");
-            counterDiv.style.display = "inline-flex";
-            counterDiv.style.marginRight = "var(--base-size-4)";
-            counterDiv.style.maxWidth = "100%";
-            counterDiv.style.verticalAlign = "text-top";
-            counterDiv.style.height = "20px";
-            counterDiv.style.marginTop = "1px";
             counterDiv.id = `tickback-counter-${issueNumber}`;
+            counterDiv.classList.add("tickback-counter");
 
             const counterBorder = document.createElement("span");
-            counterBorder.style.borderWidth = "1px";
-            counterBorder.style.borderColor = "var(--borderColor-muted,var(--color-border-muted))";
-            counterBorder.style.borderStyle = "solid";
-            counterBorder.style.maxWidth = "100%";
-            counterBorder.style.borderRadius = "var(--borderRadius-full,624.9375rem)";
-            counterBorder.style.fontSize = "var(--text-body-size-small,.75rem)";
-            counterBorder.style.display = "inline-flex";
-            counterBorder.style.alignItems = "center";
+            counterBorder.classList.add("tickback-counter-border");
 
             const counterText = document.createElement("span");
             counterText.textContent = `${completedTaskCount} / ${allTaskCount}`;
-            counterText.style.marginRight = "6px";
-            counterText.style.fontSize = "0.75rem";
-            counterText.style.lineHeight = "20px";
-            counterText.style.fontWeight = "var(--base-text-weight-semibold,600)";
-            counterText.style.lineHeight = "1";
-            counterText.style.marginBottom = "1px";
             counterText.id = `tickback-counter-text-${issueNumber}`;
+            counterText.classList.add("tickback-counter-text");
 
             const svgDiv = document.createElement("div");
-            svgDiv.style.display = "inline-block";
-            svgDiv.style.width = "13px";
-            svgDiv.style.height = "13px";
-            svgDiv.style.marginRight = "5px";
-            svgDiv.style.marginLeft = "3px";
-            svgDiv.style.lineHeight = "1";
             svgDiv.id = `tickback-svg-div-${issueNumber}`;
+            svgDiv.classList.add("tickback-svg-div");
             if (completedIcon && completedTaskCount === allTaskCount) {
                 const imgElement = document.createElement("img");
-                imgElement.style.height = "inherit";
+                imgElement.classList.add("tickback-svg-img");
                 imgElement.src = browser.runtime.getURL("icons/iconoir/check-circle.svg");
                 svgDiv.appendChild(imgElement);
             } else {
@@ -440,6 +418,7 @@ function observeIssueBodyChanges(issueNumber) {
 
 // Issues page fetch
 function loadIssuesPage() {
+    insertCSS('issues');
     browser.storage.local.get('token').then((result) => {
         const token = result.token;
         if (token) {
@@ -462,6 +441,7 @@ function loadIssuesPage() {
 
 // Single issue fetch
 function loadSingleIssue(issueNumber) {
+    insertCSS('single-issue');
     try {
         const processedData = getSingleIssueBody();
         if (!processedData) {
@@ -472,6 +452,19 @@ function loadSingleIssue(issueNumber) {
     } catch (error) {
         console.error(`Error processing issue #${issueNumber}:`, error);
     }
+}
+
+function insertCSS(name) {
+    if (document.getElementById(`tickback-${name}-style`)) {
+        //console.debug(`Style exists: ${name}`);
+        return;
+    }
+    const style = document.createElement('style');
+    style.textContent = `
+        @import url('${browser.runtime.getURL(`styles/${name}.css`)}');
+    `;
+    style.id = `tickback-${name}-style`;
+    document.head.appendChild(style);
 }
 
 // match "/issues" and "/issues/"

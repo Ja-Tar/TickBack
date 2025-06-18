@@ -1,0 +1,41 @@
+.tickback-issues-svg-img {
+    height: inherit;
+}
+
+.tickback-issues-counter {
+    display: inline-flex;
+    margin-right: var(--base-size-4);
+    max-width: 100%;
+    vertical-align: text-top;
+    height: 20px;
+    margin-top: 1px;
+}
+
+.tickback-issues-counter-border {
+    border-width: 1px;
+    border-color: var(--borderColor-muted,var(--color-border-muted));
+    border-style: solid;
+    max-width: 100%;
+    border-radius: var(--borderRadius-full,624.9375rem);
+    font-size: var(--text-body-size-small,.75rem);
+    display: inline-flex;
+    align-items: center;
+}
+
+.tickback-issues-counter-text {
+    margin-right: 6px;
+    font-size: 0.75rem;
+    line-height: 20px;
+    font-weight: var(--base-text-weight-semibold,600);
+    line-height: 1;
+    margin-bottom: 1px;
+}
+
+.tickback-issues-svg-div {
+    display: inline-block;
+    width: 13px;
+    height: 13px;
+    margin-right: 5px;
+    margin-left: 3px;
+    line-height: 1;
+}
