@@ -19,10 +19,10 @@ jobs:
 
       - name: "Update version in manifest.json"
         run: |
-          jq --arg v "${{ github.event.inputs.new_version }}" '.version = $v' manifest.json > manifest.tmp && mv manifest.tmp manifest.json
+          jq --arg v "${{ github.event.inputs.new_version }}" '.version = $v' src/manifest.json > manifest.tmp && mv manifest.tmp src/manifest.json
 
       - name: "Commit and push changes"
         uses: stefanzweifel/git-auto-commit-action@v6
         with:
           commit_message: "chore: bump version to ${{ github.event.inputs.new_version }}"
-          file_pattern: manifest.json
+          file_pattern: src/manifest.json
