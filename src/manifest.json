@@ -1,49 +1,59 @@
 {
-    "manifest_version": 3,
-    "name": "TickBack",
-    "version": "0.1.3",
-    "description": "Simple browser add-on for GitHub to add tasks count on the issues page",
-    "icons": {
-        "32": "icons/icon_32.png",
-        "64": "icons/icon_64.png",
-        "128": "icons/icon_128.png"
-    },
-    "content_scripts": [
-        {
-            "matches": ["https://github.com/*/*"],
-            "run_at": "document_end",
-            "js": ["content.js"]
-        }
-    ],
-    "background": {
-        "scripts": ["background.js"]
-    },
-    "host_permissions": [
+  "manifest_version": 3,
+  "name": "TickBack",
+  "version": "0.1.3",
+  "description": "Simple browser add-on for GitHub to add tasks count on the issues page",
+  "icons": {
+    "32": "icons/icon_32.png",
+    "64": "icons/icon_64.png",
+    "128": "icons/icon_128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
         "https://github.com/*/*"
-    ],
-    "options_ui": {
-        "page": "options/options.html"
-    },
-    "permissions": [
-        "storage"
-    ],
-    "action": {
-        "default_icon": {
-            "16": "icons/icon_16.png",
-            "32": "icons/icon_32.png"
-        },
-        "default_title": "TickBack",
-        "default_popup": "popup/popup.html"
-    },
-    "web_accessible_resources": [
-        {
-            "resources": ["icons/iconoir/*.svg"],
-            "matches": ["https://github.com/*/*"]
-        }
-    ],
-    "browser_specific_settings": {
-        "gecko": {
-            "id": "{45376c63-76e4-44b6-8121-242c4f764412}"
-        }
+      ],
+      "run_at": "document_end",
+      "js": [
+        "content.js"
+      ]
     }
+  ],
+  "background": {
+    "scripts": [
+      "background.js"
+    ]
+  },
+  "host_permissions": [
+    "https://github.com/*/*"
+  ],
+  "options_ui": {
+    "page": "options/options.html"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "action": {
+    "default_icon": {
+      "16": "icons/icon_16.png",
+      "32": "icons/icon_32.png"
+    },
+    "default_title": "TickBack",
+    "default_popup": "popup/popup.html"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icons/iconoir/*.svg"
+      ],
+      "matches": [
+        "https://github.com/*/*"
+      ]
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{45376c63-76e4-44b6-8121-242c4f764412}"
+    }
+  }
 }
