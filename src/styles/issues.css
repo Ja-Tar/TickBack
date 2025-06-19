@@ -1,37 +1,88 @@
-.tickback-issues-svg-img {
+.tickback-svg-img {
     height: inherit;
 }
 
-.tickback-issues-counter {
+.tickback-sticky-svg-img {
+    height: 16px;
+}
+
+.tickback-one-svg-img {
+    height: 20px;
+}
+
+.tickback-counter {
     display: inline-flex;
     margin-right: var(--base-size-4);
     max-width: 100%;
+}
+
+.tickback-counter.tickback-sticky {
+    margin: 0px;
+}
+
+.tickback-counter.tickback-issues {
     vertical-align: text-top;
     height: 20px;
     margin-top: 1px;
 }
 
-.tickback-issues-counter-border {
+.tickback-counter-border {
     border-width: 1px;
     border-color: var(--borderColor-muted,var(--color-border-muted));
     border-style: solid;
     max-width: 100%;
     border-radius: var(--borderRadius-full,624.9375rem);
     font-size: var(--text-body-size-small,.75rem);
+}
+
+.tickback-counter-border.tickback-one {
+    align-content: center;
+}
+
+.tickback-counter-border.tickback-issues {    
     display: inline-flex;
     align-items: center;
 }
 
-.tickback-issues-counter-text {
+.tickback-counter-text {
+    font-weight: var(--base-text-weight-semibold,600);
+}
+
+.tickback-counter-text.tickback-one {
+    margin-right: 8px;
+    font-size: 1.5em;
+    vertical-align: super;
+}
+
+.tickback-counter-text.tickback-sticky {
+    vertical-align: super;
+}
+
+.tickback-counter-text.tickback-issues {
     margin-right: 6px;
     font-size: 0.75rem;
     line-height: 20px;
-    font-weight: var(--base-text-weight-semibold,600);
     line-height: 1;
     margin-bottom: 1px;
 }
 
-.tickback-issues-svg-div {
+.tickback-svg-div {
+    height: auto;
+}
+
+.tickback-svg-div.tickback-one {
+    display: inline-flex;
+    width: 20px;
+    vertical-align: baseline;
+    margin: 0 5px;
+}
+
+.tickback-svg-div.tickback-sticky {
+    width: 16px;
+    margin-right: 5px;
+}
+
+.tickback-svg-div.tickback-issues {
     display: inline-block;
     width: 13px;
     height: 13px;
