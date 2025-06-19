@@ -486,16 +486,15 @@ function loadSingleIssue(issueNumber) {
 }
 
 function insertCSS(name) {
-    if (document.getElementById(`tickback-${name}-style`)) {
-        //console.debug(`Style exists: ${name}`);
+    if (document.getElementById(`tickback-${name}-link`)) {
+        //console.debug(`Link exists: ${name}`);
         return;
     }
-    const style = document.createElement('style');
-    style.textContent = `
-        @import url('${browser.runtime.getURL(`styles/${name}.css`)}');
-    `;
-    style.id = `tickback-${name}-style`;
-    document.head.appendChild(style);
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = browser.runtime.getURL(`styles/${name}.css`);
+    link.id = `tickback-${name}-link`;
+    document.head.appendChild(link);
 }
 
 // match "/issues" and "/issues/"
