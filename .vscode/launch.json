@@ -8,6 +8,7 @@
         "name": "Launch add-on",
         "addonPath": "${workspaceFolder}/src",
         "url": "https://github.com/Ja-Tar/TickBack/issues",
+        "profile": "testprofile",
         "reloadOnAttach": true    
     }
     ]
