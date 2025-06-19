@@ -227,7 +227,8 @@ function processWebIssues(apiData) {
 
             if (!title || !issueNumber || !trailingBadgesContainer) return;
 
-            const apiIssueData = apiData[parseInt(issueNumber, 10)];
+            const parsedNumber = parseInt(issueNumber, 10);
+            const apiIssueData = apiData[parsedNumber];
 
             if (!apiIssueData) {
                 console.warn(`No API data for: ${issueNumber}`);
@@ -236,15 +237,15 @@ function processWebIssues(apiData) {
 
             const { allTaskCount, completedTaskCount, progress } = apiIssueData;
             const strokeDashoffset = ((100 - progress) / 100) * 50.28; // circumference -> radius 8
-            const oldCounterDiv = document.getElementById(`tickback-counter-${issueNumber}`);
+            const oldCounterDiv = document.getElementById(`tickback-counter-${parsedNumber}`);
 
             if (oldCounterDiv) {
                 // Change values in existing counter
-                const oldCounterText = document.getElementById(`tickback-counter-text-${issueNumber}`);
+                const oldCounterText = document.getElementById(`tickback-counter-text-${parsedNumber}`);
                 if (oldCounterText) {
                     oldCounterText.textContent = `${apiIssueData.completedTaskCount} / ${apiIssueData.allTaskCount}`;
                 }
-                const oldSvgDiv = document.getElementById(`tickback-svg-div-${issueNumber}`);
+                const oldSvgDiv = document.getElementById(`tickback-svg-div-${parsedNumber}`);
                 if (completedIcon && completedTaskCount === allTaskCount) {
                     oldSvgDiv.innerHTML = "";
                     const imgElement = document.createElement("img");
@@ -260,7 +261,7 @@ function processWebIssues(apiData) {
             }
 
             const counterDiv = document.createElement("div");
-            counterDiv.id = `tickback-counter-${issueNumber}`;
+            counterDiv.id = `tickback-counter-${parsedNumber}`;
             counterDiv.className = "tickback-counter tickback-issues";
 
             const counterBorder = document.createElement("span");
@@ -268,11 +269,11 @@ function processWebIssues(apiData) {
 
             const counterText = document.createElement("span");
             counterText.textContent = `${completedTaskCount} / ${allTaskCount}`;
-            counterText.id = `tickback-counter-text-${issueNumber}`;
+            counterText.id = `tickback-counter-text-${parsedNumber}`;
             counterText.className = "tickback-counter-text tickback-issues";
 
             const svgDiv = document.createElement("div");
-            svgDiv.id = `tickback-svg-div-${issueNumber}`;
+            svgDiv.id = `tickback-svg-div-${parsedNumber}`;
             svgDiv.className = "tickback-svg-div tickback-issues";
             if (completedIcon && completedTaskCount === allTaskCount) {
                 const imgElement = document.createElement("img");
@@ -399,7 +400,11 @@ function processOneIssue(apiData, issueNumber) {
 
         stickyCounterDiv.appendChild(stickySvgDiv);
         stickyCounterDiv.appendChild(stickyCounterText);
-        issueScrollDivForBadge.appendChild(stickyCounterDiv);
+        if (issueScrollDivForBadge.children.length > 0) {
+            issueScrollDivForBadge.insertBefore(stickyCounterDiv, issueScrollDivForBadge.children[0]);
+        } else {
+            issueScrollDivForBadge.appendChild(stickyCounterDiv);
+        }
 
         observeIssueBodyChanges(issueNumber);
 
