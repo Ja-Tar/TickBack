@@ -227,7 +227,8 @@ function processWebIssues(apiData) {
 
             if (!title || !issueNumber || !trailingBadgesContainer) return;
 
-            const apiIssueData = apiData[parseInt(issueNumber, 10)];
+            const parsedNumber = parseInt(issueNumber, 10);
+            const apiIssueData = apiData[parsedNumber];
 
             if (!apiIssueData) {
                 console.warn(`No API data for: ${issueNumber}`);
@@ -236,19 +237,19 @@ function processWebIssues(apiData) {
 
             const { allTaskCount, completedTaskCount, progress } = apiIssueData;
             const strokeDashoffset = ((100 - progress) / 100) * 50.28; // circumference -> radius 8
-            const oldCounterDiv = document.getElementById(`tickback-counter-${issueNumber}`);
+            const oldCounterDiv = document.getElementById(`tickback-counter-${parsedNumber}`);
 
             if (oldCounterDiv) {
                 // Change values in existing counter
-                const oldCounterText = document.getElementById(`tickback-counter-text-${issueNumber}`);
+                const oldCounterText = document.getElementById(`tickback-counter-text-${parsedNumber}`);
                 if (oldCounterText) {
                     oldCounterText.textContent = `${apiIssueData.completedTaskCount} / ${apiIssueData.allTaskCount}`;
                 }
-                const oldSvgDiv = document.getElementById(`tickback-svg-div-${issueNumber}`);
+                const oldSvgDiv = document.getElementById(`tickback-svg-div-${parsedNumber}`);
                 if (completedIcon && completedTaskCount === allTaskCount) {
                     oldSvgDiv.innerHTML = "";
                     const imgElement = document.createElement("img");
-                    imgElement.style.height = "inherit";
+                    imgElement.className = "tickback-svg-img";
                     imgElement.src = browser.runtime.getURL("icons/iconoir/check-circle.svg");
                     oldSvgDiv.appendChild(imgElement);
                 } else if (oldSvgDiv) {
@@ -260,45 +261,23 @@ function processWebIssues(apiData) {
             }
 
             const counterDiv = document.createElement("div");
-            counterDiv.style.display = "inline-flex";
-            counterDiv.style.marginRight = "var(--base-size-4)";
-            counterDiv.style.maxWidth = "100%";
-            counterDiv.style.verticalAlign = "text-top";
-            counterDiv.style.height = "20px";
-            counterDiv.style.marginTop = "1px";
-            counterDiv.id = `tickback-counter-${issueNumber}`;
+            counterDiv.id = `tickback-counter-${parsedNumber}`;
+            counterDiv.className = "tickback-counter tickback-issues";
 
             const counterBorder = document.createElement("span");
-            counterBorder.style.borderWidth = "1px";
-            counterBorder.style.borderColor = "var(--borderColor-muted,var(--color-border-muted))";
-            counterBorder.style.borderStyle = "solid";
-            counterBorder.style.maxWidth = "100%";
-            counterBorder.style.borderRadius = "var(--borderRadius-full,624.9375rem)";
-            counterBorder.style.fontSize = "var(--text-body-size-small,.75rem)";
-            counterBorder.style.display = "inline-flex";
-            counterBorder.style.alignItems = "center";
+            counterBorder.className = "tickback-counter-border tickback-issues";
 
             const counterText = document.createElement("span");
             counterText.textContent = `${completedTaskCount} / ${allTaskCount}`;
-            counterText.style.marginRight = "6px";
-            counterText.style.fontSize = "0.75rem";
-            counterText.style.lineHeight = "20px";
-            counterText.style.fontWeight = "var(--base-text-weight-semibold,600)";
-            counterText.style.lineHeight = "1";
-            counterText.style.marginBottom = "1px";
-            counterText.id = `tickback-counter-text-${issueNumber}`;
+            counterText.id = `tickback-counter-text-${parsedNumber}`;
+            counterText.className = "tickback-counter-text tickback-issues";
 
             const svgDiv = document.createElement("div");
-            svgDiv.style.display = "inline-block";
-            svgDiv.style.width = "13px";
-            svgDiv.style.height = "13px";
-            svgDiv.style.marginRight = "5px";
-            svgDiv.style.marginLeft = "3px";
-            svgDiv.style.lineHeight = "1";
-            svgDiv.id = `tickback-svg-div-${issueNumber}`;
+            svgDiv.id = `tickback-svg-div-${parsedNumber}`;
+            svgDiv.className = "tickback-svg-div tickback-issues";
             if (completedIcon && completedTaskCount === allTaskCount) {
                 const imgElement = document.createElement("img");
-                imgElement.style.height = "inherit";
+                imgElement.className = "tickback-svg-img";
                 imgElement.src = browser.runtime.getURL("icons/iconoir/check-circle.svg");
                 svgDiv.appendChild(imgElement);
             } else {
@@ -320,96 +299,130 @@ function processOneIssue(apiData, issueNumber) {
         const completedIcon = data.completedIcon !== undefined ? data.completedIcon : true;
         const incompleteIcon = data.incompleteIcon !== undefined ? data.incompleteIcon : true;
         const issueMetadata = document.querySelector('div[data-testid="issue-metadata-fixed"]');
+        const issueScrollMetadata = document.querySelector('div[data-testid="issue-metadata-sticky"]');
         const issueDivForBadge = issueMetadata.children[0].children[0];
+        const issueScrollDivForBadge = issueScrollMetadata.children[0].children[0].children[1].children[1];
 
         if (!issueDivForBadge) {
             console.warn(`No issue metadata found for issue #${issueNumber}`);
+            return;
+        } else if (!issueScrollDivForBadge) {
+            console.warn(`No issue scroll metadata found for issue #${issueNumber}`);
             return;
         }
 
         const { allTaskCount, completedTaskCount, progress } = apiData;
         const strokeDashoffset = ((100 - progress) / 100) * 50.28; // circumference -> radius 8
         const oldCounterDiv = issueDivForBadge.querySelector("#tickback-counter");
+        const oldStickyCounterDiv = issueScrollDivForBadge.querySelector("#tickback-sticky-counter");
+
+        // Helper to set SVG or icon for a given div
+        function setProgressIcon(targetDiv, className) {
+            targetDiv.innerHTML = "";
+            if (completedIcon && completedTaskCount === allTaskCount) {
+                const imgElement = document.createElement("img");
+                imgElement.className = className;
+                imgElement.src = browser.runtime.getURL("icons/iconoir/check-circle.svg");
+                targetDiv.appendChild(imgElement);
+            } else if (incompleteIcon && completedTaskCount === 0) {
+                const imgElement = document.createElement("img");
+                imgElement.className = className;
+                imgElement.src = browser.runtime.getURL("icons/iconoir/task-list.svg");
+                targetDiv.appendChild(imgElement);
+            } else {
+                targetDiv.appendChild(createProgressCircleSVG(strokeDashoffset));
+            }
+        }
+
+        let updated = false;
 
         if (oldCounterDiv) {
-            // Change values in existing counter
             const counterText = oldCounterDiv.querySelector("#tickback-counter-text");
+
             if (counterText) {
                 counterText.textContent = `${completedTaskCount} / ${allTaskCount}`;
             }
+
             const svgDiv = oldCounterDiv.querySelector("#tickback-svg-div");
-            if (completedIcon && completedTaskCount === allTaskCount) {
-                svgDiv.innerHTML = "";
-                const imgElement = document.createElement("img");
-                imgElement.style.height = "20px";
-                imgElement.src = browser.runtime.getURL("icons/iconoir/check-circle.svg");
-                svgDiv.appendChild(imgElement);
-            } else if (incompleteIcon && completedTaskCount === 0) {
-                svgDiv.innerHTML = "";
-                const imgElement = document.createElement("img");
-                imgElement.style.height = "20px";
-                imgElement.src = browser.runtime.getURL("icons/iconoir/task-list.svg");
-                svgDiv.appendChild(imgElement);
-            } else if (svgDiv) {
-                svgDiv.innerHTML = "";
-                svgDiv.appendChild(createProgressCircleSVG(strokeDashoffset));
+            svgDiv.className = "tickback-svg-div tickback-one";
+            setProgressIcon(svgDiv, "tickback-one-svg-img");
+
+            updated = true;
+        } else {
+            // Assemble the main counter div ===
+
+            const counterDiv = document.createElement("div");
+            counterDiv.className = "tickback-counter tickback-one";
+            counterDiv.id = "tickback-counter";
+
+            const counterBorder = document.createElement("span");
+            counterBorder.className = "tickback-counter-border tickback-one";
+            counterBorder.id = "tickback-counter-border";
+
+            const counterText = document.createElement("span");
+            counterText.textContent = `${completedTaskCount} / ${allTaskCount}`;
+            counterText.className = "tickback-counter-text tickback-one";
+            counterText.id = "tickback-counter-text";
+
+            const svgDiv = document.createElement("div");
+            svgDiv.className = "tickback-svg-div tickback-one";
+            svgDiv.id = "tickback-svg-div";
+            setProgressIcon(svgDiv, "tickback-one-svg-img");
+
+            counterBorder.appendChild(svgDiv);
+            counterBorder.appendChild(counterText);
+            counterDiv.appendChild(counterBorder);
+            if (issueDivForBadge.children.length > 1) {
+                issueDivForBadge.insertBefore(counterDiv, issueDivForBadge.children[1]);
+            } else {
+                issueDivForBadge.appendChild(counterDiv);
             }
-            console.debug(`Updated existing issue counter: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
+        }
+
+        if (oldStickyCounterDiv) {
+            const stickyCounterText = oldStickyCounterDiv.querySelector("#tickback-sticky-counter-text");
+
+            if (stickyCounterText) {
+                stickyCounterText.textContent = `${completedTaskCount} / ${allTaskCount}`;
+            }
+
+            const stickySvgDiv = oldStickyCounterDiv.querySelector("#tickback-sticky-svg-div");
+            stickySvgDiv.className = "tickback-svg-div tickback-sticky tickback-one";
+            setProgressIcon(stickySvgDiv, "tickback-sticky-svg-img");
+
+            updated = true;
+        } else {
+            // Assemble the sticky metadata counter ===
+
+            const stickyCounterDiv = document.createElement("div");
+            stickyCounterDiv.className = "tickback-counter tickback-sticky";
+            stickyCounterDiv.id = "tickback-sticky-counter";
+            
+            const stickyCounterText = document.createElement("span");
+            stickyCounterText.textContent = `${completedTaskCount} / ${allTaskCount}`;
+            stickyCounterText.className = "tickback-counter-text tickback-sticky";
+            stickyCounterText.id = "tickback-sticky-counter-text";
+            
+            const stickySvgDiv = document.createElement("div");
+            stickySvgDiv.className = "tickback-svg-div tickback-sticky tickback-one";
+            stickySvgDiv.id = "tickback-sticky-svg-div";
+            setProgressIcon(stickySvgDiv, "tickback-sticky-svg-img");
+            
+            stickyCounterDiv.appendChild(stickySvgDiv);
+            stickyCounterDiv.appendChild(stickyCounterText);
+            if (issueScrollDivForBadge.children.length > 0) {
+                issueScrollDivForBadge.insertBefore(stickyCounterDiv, issueScrollDivForBadge.children[0]);
+            } else {
+                issueScrollDivForBadge.appendChild(stickyCounterDiv);
+            }
+        }
+
+        if (updated) {
+            console.debug(`Updated existing issue counter - tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
             return;
         }
 
-        const counterDiv = document.createElement("div");
-        counterDiv.style.display = "inline-flex";
-        counterDiv.style.marginRight = "var(--base-size-4)";
-        counterDiv.style.height = "100%";
-        counterDiv.id = "tickback-counter";
-
-        const counterBorder = document.createElement("span");
-        counterBorder.style.borderWidth = "1px";
-        counterBorder.style.borderColor = "var(--borderColor-muted,var(--color-border-muted))";
-        counterBorder.style.borderStyle = "solid";
-        counterBorder.style.borderRadius = "var(--borderRadius-full,624.9375rem)";
-        counterBorder.style.fontSize = "var(--text-body-size-small,.75rem)";
-        counterBorder.style.alignContent = "center";
-        counterBorder.id = "tickback-counter-border";
-
-        const counterText = document.createElement("span");
-        counterText.textContent = `${completedTaskCount} / ${allTaskCount}`;
-        counterText.style.marginRight = "8px";
-        counterText.style.fontSize = "1.5em";
-        counterText.style.fontWeight = "var(--base-text-weight-semibold,600)";
-        counterText.style.verticalAlign = "super";
-        counterText.id = "tickback-counter-text";
-
-        const svgDiv = document.createElement("div");
-        svgDiv.style.display = "inline-flex";
-        svgDiv.style.width = "20px";
-        svgDiv.style.height = "auto";
-        svgDiv.style.verticalAlign = "baseline";
-        svgDiv.style.margin = "0 5px";
-        svgDiv.id = "tickback-svg-div";
-        if (completedIcon && completedTaskCount === allTaskCount) {
-            const imgElement = document.createElement("img");
-            imgElement.style.height = "20px";
-            imgElement.src = browser.runtime.getURL("icons/iconoir/check-circle.svg");
-            svgDiv.appendChild(imgElement);
-        } else if (incompleteIcon && completedTaskCount === 0) {
-            const imgElement = document.createElement("img");
-            imgElement.style.height = "20px";
-            imgElement.src = browser.runtime.getURL("icons/iconoir/task-list.svg");
-            svgDiv.appendChild(imgElement);
-        } else if (svgDiv) {
-            svgDiv.innerHTML = "";
-            svgDiv.appendChild(createProgressCircleSVG(strokeDashoffset));
-        }
-
-        counterBorder.appendChild(svgDiv);
-        counterBorder.appendChild(counterText);
-        counterDiv.appendChild(counterBorder);
-        issueDivForBadge.appendChild(counterDiv);
-
         observeIssueBodyChanges(issueNumber);
-
         console.debug(`Single issue: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
     });
 }
@@ -436,6 +449,7 @@ function observeIssueBodyChanges(issueNumber) {
 
 // Issues page fetch
 function loadIssuesPage() {
+    insertCSS('issues');
     browser.storage.local.get('token').then((result) => {
         const token = result.token;
         if (token) {
@@ -458,6 +472,7 @@ function loadIssuesPage() {
 
 // Single issue fetch
 function loadSingleIssue(issueNumber) {
+    insertCSS('issues');
     try {
         const processedData = getSingleIssueBody();
         if (!processedData) {
@@ -468,6 +483,18 @@ function loadSingleIssue(issueNumber) {
     } catch (error) {
         console.error(`Error processing issue #${issueNumber}:`, error);
     }
+}
+
+function insertCSS(name) {
+    if (document.getElementById(`tickback-${name}-link`)) {
+        //console.debug(`Link exists: ${name}`);
+        return;
+    }
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = browser.runtime.getURL(`styles/${name}.css`);
+    link.id = `tickback-${name}-link`;
+    document.head.appendChild(link);
 }
 
 // match "/issues" and "/issues/"
