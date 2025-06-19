@@ -1,0 +1,28 @@
+name: Version update
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      new_version:
+        description: "New version number (e.g. 1.2.3)"
+        required: true
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+
+      - name: "Update version in manifest.json"
+        run: |
+          jq --arg v "${{ github.event.inputs.new_version }}" '.version = $v' manifest.json > manifest.tmp && mv manifest.tmp manifest.json
+
+      - name: "Commit and push changes"
+        uses: stefanzweifel/git-auto-commit-action@v6
+        with:
+          commit_message: "chore: bump version to ${{ github.event.inputs.new_version }}"
+          file_pattern: manifest.json
