@@ -306,6 +306,9 @@ function processOneIssue(apiData, issueNumber) {
         if (!issueDivForBadge) {
             console.warn(`No issue metadata found for issue #${issueNumber}`);
             return;
+        } else if (!issueScrollDivForBadge) {
+            console.warn(`No issue scroll metadata found for issue #${issueNumber}`);
+            return;
         }
 
         const { allTaskCount, completedTaskCount, progress } = apiData;
@@ -331,83 +334,95 @@ function processOneIssue(apiData, issueNumber) {
             }
         }
 
-        if (oldCounterDiv && oldStickyCounterDiv) {
-            // Change values in existing counter
-            const counterText = oldCounterDiv.querySelector("#tickback-counter-text");
-            const stickyCounterText = oldStickyCounterDiv.querySelector("#tickback-sticky-counter-text");
+        let updated = false;
 
-            if (counterText && stickyCounterText) {
+        if (oldCounterDiv) {
+            const counterText = oldCounterDiv.querySelector("#tickback-counter-text");
+
+            if (counterText) {
                 counterText.textContent = `${completedTaskCount} / ${allTaskCount}`;
-                stickyCounterText.textContent = `${completedTaskCount} / ${allTaskCount}`;
             }
-            
+
             const svgDiv = oldCounterDiv.querySelector("#tickback-svg-div");
             svgDiv.className = "tickback-svg-div tickback-one";
             setProgressIcon(svgDiv, "tickback-one-svg-img");
+
+            updated = true;
+        } else {
+            // Assemble the main counter div ===
+
+            const counterDiv = document.createElement("div");
+            counterDiv.className = "tickback-counter tickback-one";
+            counterDiv.id = "tickback-counter";
+
+            const counterBorder = document.createElement("span");
+            counterBorder.className = "tickback-counter-border tickback-one";
+            counterBorder.id = "tickback-counter-border";
+
+            const counterText = document.createElement("span");
+            counterText.textContent = `${completedTaskCount} / ${allTaskCount}`;
+            counterText.className = "tickback-counter-text tickback-one";
+            counterText.id = "tickback-counter-text";
+
+            const svgDiv = document.createElement("div");
+            svgDiv.className = "tickback-svg-div tickback-one";
+            svgDiv.id = "tickback-svg-div";
+            setProgressIcon(svgDiv, "tickback-one-svg-img");
+
+            counterBorder.appendChild(svgDiv);
+            counterBorder.appendChild(counterText);
+            counterDiv.appendChild(counterBorder);
+            if (issueDivForBadge.children.length > 1) {
+                issueDivForBadge.insertBefore(counterDiv, issueDivForBadge.children[1]);
+            } else {
+                issueDivForBadge.appendChild(counterDiv);
+            }
+        }
+
+        if (oldStickyCounterDiv) {
+            const stickyCounterText = oldStickyCounterDiv.querySelector("#tickback-sticky-counter-text");
+
+            if (stickyCounterText) {
+                stickyCounterText.textContent = `${completedTaskCount} / ${allTaskCount}`;
+            }
 
             const stickySvgDiv = oldStickyCounterDiv.querySelector("#tickback-sticky-svg-div");
             stickySvgDiv.className = "tickback-svg-div tickback-sticky tickback-one";
             setProgressIcon(stickySvgDiv, "tickback-sticky-svg-img");
 
-            console.debug(`Updated existing issue counter: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
+            updated = true;
+        } else {
+            // Assemble the sticky metadata counter ===
+
+            const stickyCounterDiv = document.createElement("div");
+            stickyCounterDiv.className = "tickback-counter tickback-sticky";
+            stickyCounterDiv.id = "tickback-sticky-counter";
+            
+            const stickyCounterText = document.createElement("span");
+            stickyCounterText.textContent = `${completedTaskCount} / ${allTaskCount}`;
+            stickyCounterText.className = "tickback-counter-text tickback-sticky";
+            stickyCounterText.id = "tickback-sticky-counter-text";
+            
+            const stickySvgDiv = document.createElement("div");
+            stickySvgDiv.className = "tickback-svg-div tickback-sticky tickback-one";
+            stickySvgDiv.id = "tickback-sticky-svg-div";
+            setProgressIcon(stickySvgDiv, "tickback-sticky-svg-img");
+            
+            stickyCounterDiv.appendChild(stickySvgDiv);
+            stickyCounterDiv.appendChild(stickyCounterText);
+            if (issueScrollDivForBadge.children.length > 0) {
+                issueScrollDivForBadge.insertBefore(stickyCounterDiv, issueScrollDivForBadge.children[0]);
+            } else {
+                issueScrollDivForBadge.appendChild(stickyCounterDiv);
+            }
+        }
+
+        if (updated) {
+            console.debug(`Updated existing issue counter - tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
             return;
         }
 
-        // Assemble the main counter div ===
-
-        const counterDiv = document.createElement("div");
-        counterDiv.className = "tickback-counter tickback-one";
-        counterDiv.id = "tickback-counter";
-
-        const counterBorder = document.createElement("span");
-        counterBorder.className = "tickback-counter-border tickback-one";
-        counterBorder.id = "tickback-counter-border";
-
-        const counterText = document.createElement("span");
-        counterText.textContent = `${completedTaskCount} / ${allTaskCount}`;
-        counterText.className = "tickback-counter-text tickback-one";
-        counterText.id = "tickback-counter-text";
-
-        const svgDiv = document.createElement("div");
-        svgDiv.className = "tickback-svg-div tickback-one";
-        svgDiv.id = "tickback-svg-div";
-        setProgressIcon(svgDiv, "tickback-one-svg-img");
-
-        counterBorder.appendChild(svgDiv);
-        counterBorder.appendChild(counterText);
-        counterDiv.appendChild(counterBorder);
-        if (issueDivForBadge.children.length > 1) {
-            issueDivForBadge.insertBefore(counterDiv, issueDivForBadge.children[1]);
-        } else {
-            issueDivForBadge.appendChild(counterDiv);
-        }
-
-        // Assemble the sticky metadata counter ===
-
-        const stickyCounterDiv = document.createElement("div");
-        stickyCounterDiv.className = "tickback-counter tickback-sticky";
-        stickyCounterDiv.id = "tickback-sticky-counter";
-
-        const stickyCounterText = document.createElement("span");
-        stickyCounterText.textContent = `${completedTaskCount} / ${allTaskCount}`;
-        stickyCounterText.className = "tickback-counter-text tickback-sticky";
-        stickyCounterText.id = "tickback-sticky-counter-text";
-
-        const stickySvgDiv = document.createElement("div");
-        stickySvgDiv.className = "tickback-svg-div tickback-sticky tickback-one";
-        stickySvgDiv.id = "tickback-sticky-svg-div";
-        setProgressIcon(stickySvgDiv, "tickback-sticky-svg-img");
-
-        stickyCounterDiv.appendChild(stickySvgDiv);
-        stickyCounterDiv.appendChild(stickyCounterText);
-        if (issueScrollDivForBadge.children.length > 0) {
-            issueScrollDivForBadge.insertBefore(stickyCounterDiv, issueScrollDivForBadge.children[0]);
-        } else {
-            issueScrollDivForBadge.appendChild(stickyCounterDiv);
-        }
-
         observeIssueBodyChanges(issueNumber);
-
         console.debug(`Single issue: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
     });
 }
