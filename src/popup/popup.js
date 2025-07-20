@@ -41,9 +41,15 @@ function updateProgressBar() {
     browser.storage.local.get(['rateLimitRemaining', 'rateLimitReset', 'tokenStatus']).then((data) => {
         const resetDiv = document.getElementById('rateLimitResetDiv');
         const infoDiv = document.getElementById('infoDiv');
-        const tokenStatus = data.tokenStatus;
+        let tokenStatus = data.tokenStatus;
         let rateLimitRemaining = data.rateLimitRemaining;
         const rateLimitReset = data.rateLimitReset;
+
+        if (tokenStatus === undefined) {
+            tokenStatus = 1;
+            browser.storage.local.set({ tokenStatus: 1, rateLimitRemaining: 0 });
+        }
+
         if (tokenStatus === 1 || tokenStatus === 2) {
             resetDiv.style.color = 'transparent';
             progressBar.value = 0;
@@ -70,7 +76,7 @@ function updateProgressBar() {
             const now = new Date();
             if (resetTime < now) {
                 resetDiv.style.color = 'transparent';
-                browser.storage.local.set({ rateLimitRemaining: 100 });
+                browser.storage.local.set({ rateLimitRemaining: 5000, rateLimitReset: undefined });
             } else {
                 resetSpan.innerText = resetTime.toLocaleString();
                 resetDiv.style.color = 'inherit';
