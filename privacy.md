@@ -1,18 +1,10 @@
-This extension communicates only with GitHub to display task progress on the main issues page (github.com/&lt;user&gt;/&lt;repository&gt;/issues).
+# Privacy Policy
 
-## Privacy Policy
+This extension communicates directly with GitHub to display task progress only on the main issues page (github.com/&lt;user&gt;/&lt;repository&gt;/issues).  
+- **Personal Access Token**: If you provide a GitHub Personal Access Token, it is stored only locally in your browser and is sent exclusively to GitHub to authenticate API requests.  
+- **No third-party servers**: The extension does not use any external servers; all communication is between your browser and GitHub.  
+- **No analytics or advertising**: The extension does not collect analytics, display ads, or share any data with third parties.  
+- **Voluntary**: Providing a token is voluntary and required only for API-based features.  
+- **Data removal**: You can remove your token and all extension data at any time via the extension's settings.
 
-### What data is collected?
-The extension does not collect any personal data. If you provide your GitHub Personal Access Token, it is used solely to communicate with the GitHub API and is stored locally in your browser.
-
-### How is the data used?
-The token is used only to fetch issue information from your GitHub account. It is not sent to any servers other than GitHub.
-
-### How can you remove your data?
-You can remove your token at any time in the extension's settings.
-
-### Security
-The extension does not send any data to third-party servers, does not display ads, and does not use analytics tools. Your GitHub token is stored in your browser's local storage and is never transmitted to any server other than GitHub. Please note that local browser storage is not encrypted.
-
-### Contact
-If you have any questions about privacy, please contact: [ **bliny.piwowar-3n@icloud.com** ]
+Once installed, GitHub may be able to detect the use of this extension.
