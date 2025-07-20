@@ -57,12 +57,10 @@ jobs:
     steps:
       - name: "Checkout"
         uses: actions/checkout@v4
-        with:
-          ref: main_chrome
 
       - name: "Make zip"
         run: |
-          cd src
+          cd src_chrome
           zip -r ../${{ github.event.release.tag_name }}.zip .
 
       - name: "Attach release assets to release"

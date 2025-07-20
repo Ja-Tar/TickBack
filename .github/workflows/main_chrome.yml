@@ -9,11 +9,9 @@ jobs:
     steps:
       - name: "Checkout"
         uses: actions/checkout@v4
-        with:
-          ref: main_chrome
 
       - name: "Upload Artifact"
         uses: actions/upload-artifact@v4
         with:
           name: TickBack-${{ github.run_number }}
-          path: src/
+          path: src_chrome/
