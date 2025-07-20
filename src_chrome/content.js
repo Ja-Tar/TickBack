@@ -14,7 +14,7 @@ async function getApiIssues(
     query = 'state:open sort:created-desc type:issue',
     page = 1
 ) {
-    const rateLimitInfo = await browser.storage.local.get(['tokenStatus', 'rateLimitRemaining', 'rateLimitReset'])
+    const rateLimitInfo = await chrome.storage.local.get(['tokenStatus', 'rateLimitRemaining', 'rateLimitReset'])
     let tokenStatus = rateLimitInfo.tokenStatus; // 0 = valid, 1 = not set, 2 = invalid, 3 = rate limited
     let rateLimitRemaining = rateLimitInfo.rateLimitRemaining;
     let rateLimitReset = rateLimitInfo.rateLimitReset;
