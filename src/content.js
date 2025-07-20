@@ -507,18 +507,14 @@ function insertCSS(name) {
 // match "/issues" and "/issues/"
 const regexIssuesPage = /\/issues\/?$/;
 if (regexIssuesPage.test(document.location.pathname)) {
-    document.addEventListener('DOMContentLoaded', () => {
-        loadIssuesPage();
-    });
+    loadIssuesPage();
 }
 
 // match "/issue/12" and "/issue/12/"
 const regexIssuePage = /\/issues\/(\d+)\/?$/;
 if (regexIssuePage.test(document.location.pathname)) {
     const issueNumber = regexIssuePage.exec(document.location.pathname)[1];
-    document.addEventListener('DOMContentLoaded', () => {
-        loadSingleIssue(issueNumber);
-    });
+    loadSingleIssue(issueNumber);
 }
 
 // Check for GitHub progress bar removal
