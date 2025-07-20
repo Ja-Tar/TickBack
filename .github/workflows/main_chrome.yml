@@ -15,5 +15,5 @@ jobs:
       - name: "Upload Artifact"
         uses: actions/upload-artifact@v4
         with:
-          name: TickBack-${{ github.run_number }}.zip
+          name: TickBack-${{ github.run_number }}
           path: src/
