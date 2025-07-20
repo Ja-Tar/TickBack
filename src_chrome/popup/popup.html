@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>API Status</title>
+    <style>
+        body {
+            width: 13em;
+            font-family: Arial, sans-serif;
+            padding: 15px;
+            color-scheme: light dark;
+            background-color: Canvas;
+            color: CanvasText;
+            border: 1px solid CanvasText;
+            font-size: 1em;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            margin-top: 0px;
+        }
+
+        #rateLimitDiv {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        progress {
+            width: 100%;
+            height: 15px;
+            background-color: Canvas;
+            color: CanvasText;
+        }
+
+        #progressContainer {
+            border-radius: 20px;
+            overflow-y: hidden;
+            width: 100%;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+
+        #rateLimitDivBox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-right: 8px;
+        }
+
+        #rateLimit {
+            width: 100%;
+            height: 20px;
+            appearance: none;
+            border-radius: 5px;
+        }
+
+        #rateLimitValue {
+            font-weight: bold;
+            min-width: 10px;
+        }
+
+        #rateLimitReset {
+            font-weight: bold;
+            min-width: 10px;
+            background-color: transparent;
+            border: none;
+            color: CanvasText;
+            cursor: default;
+        }
+
+        /*
+        progress::-webkit-progress-value {background-color: #4caf50 !important;}
+        progress::-webkit-progress-value {background-color: #ff9800 !important;}
+        progress::-webkit-progress-value {background-color: #f44336 !important;}
+        progress::-moz-progress-bar {background-color: #4caf50 !important;}
+        progress::-moz-progress-bar {background-color: #ff9800 !important;}
+        progress::-moz-progress-bar {background-color: #f44336 !important;}
+        progress {color: #4caf50; }
+        progress {color: #ff9800; }
+        progress {color: #f44336; }
+        progress[value] {-webkit-appearance: none;}
+        */
+    </style>
+</head>
+
+<body>
+    <h1>API Status</h1>
+    <div id="infoDiv" style="display: none; color: #f44336;"></div>
+    <div id="rateLimitDiv">
+        <label for="rateLimit">Quota left:</label>
+        <div id="rateLimitDivBox">
+            <div id="progressContainer">
+                <progress id="rateLimit" value="0" max="5000" class="lowProgress"></progress>
+            </div>
+            <span id="rateLimitValue">0%</span>
+        </div>
+    </div>
+    <div id="rateLimitResetDiv" style="color: transparent;">
+        <label for="rateLimitReset">Resets on:</label>
+        <span id="rateLimitReset"></span>
+    </div>
+    <script src="popup.js"></script>
+</body>
+
+</html>
