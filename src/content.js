@@ -1,3 +1,10 @@
+const tokenStatusText = {
+    0: "Token is valid",
+    1: "Token is not set",
+    2: "Token is invalid",
+    3: "Rate limit reached"
+};
+
 // Main script
 
 async function getApiIssues(
@@ -7,15 +14,14 @@ async function getApiIssues(
     query = 'state:open sort:created-desc type:issue',
     page = 1
 ) {
-    const rateLimitInfo = await browser.storage.local.get(['wrongToken', 'rateLimitRemaining', 'rateLimitReset'])
-    let wrongToken = rateLimitInfo.wrongToken;
+    const rateLimitInfo = await browser.storage.local.get(['tokenStatus', 'rateLimitRemaining', 'rateLimitReset'])
+    let tokenStatus = rateLimitInfo.tokenStatus; // 0 = valid, 1 = not set, 2 = invalid, 3 = rate limited
     let rateLimitRemaining = rateLimitInfo.rateLimitRemaining;
     let rateLimitReset = rateLimitInfo.rateLimitReset;
     let after = "";
 
-    // Stop if rate limit is reached or wrong token
-    if (wrongToken === true) {
-        console.warn('Rate limit is too low, change token');
+    if (tokenStatus !== 0) {
+        console.warn(`Token status: ${tokenStatusText[tokenStatus]}`);
         return [];
     } else if (rateLimitRemaining <= 5) {
         const resetTime = new Date(rateLimitReset * 1000);
@@ -58,13 +64,14 @@ async function getApiIssues(
 
     // Check for rate limit headers
     if (data.message?.includes("Bad credentials")) {
-        wrongToken = true;
+        tokenStatus = 2; // Invalid token
+        console.warn('Invalid token detected');
     }
     rateLimitRemaining = parseInt(response.headers.get('X-RateLimit-Remaining'), 10);
     rateLimitReset = parseInt(response.headers.get('X-RateLimit-Reset'), 10);
 
     browser.storage.local.set({
-        wrongToken,
+        tokenStatus,
         rateLimitRemaining,
         rateLimitReset
     }).catch((error) => {

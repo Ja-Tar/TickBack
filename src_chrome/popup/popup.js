@@ -1,3 +1,10 @@
+const tokenStatusText = {
+    0: "Token is valid",
+    1: "GitHub token NOT set",
+    2: "GitHub token is invalid",
+    3: "Rate limit reached"
+};
+
 // observe the progress bar for changes
 const progressBar = document.getElementById('rateLimit');
 const observer = new MutationObserver(() => {
@@ -31,24 +38,18 @@ function setProgressBarColor(value) {
 }
 
 function updateProgressBar() {
-    chrome.storage.local.get(['rateLimitRemaining', 'rateLimitReset', 'token', 'wrongToken']).then((data) => {
+    chrome.storage.local.get(['rateLimitRemaining', 'rateLimitReset', 'tokenStatus']).then((data) => {
         const resetDiv = document.getElementById('rateLimitResetDiv');
         const infoDiv = document.getElementById('infoDiv');
-        const token = data.token;
-        const wrongToken = data.wrongToken;
+        const tokenStatus = data.tokenStatus;
         let rateLimitRemaining = data.rateLimitRemaining;
         const rateLimitReset = data.rateLimitReset;
-        if (!token || wrongToken) {
+        if (tokenStatus === 1 || tokenStatus === 2) {
             resetDiv.style.color = 'transparent';
             progressBar.value = 0;
             document.getElementById('rateLimitValue').textContent = '0%';
-            if (!token) {
-                infoDiv.innerHTML = '<p>GitHub token NOT set</p>';
-            } else {
-                infoDiv.innerHTML = '<p>GitHub token is wrong</p>';
-            }
+            infoDiv.innerHTML = `<p>${tokenStatusText[tokenStatus]}</p>`;
             infoDiv.style.display = 'block';
-            
             return;
         }
 
