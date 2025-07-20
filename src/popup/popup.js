@@ -88,4 +88,4 @@ function updateProgressBar() {
 updateProgressBar();
 setInterval(() => {
     updateProgressBar();
-}, 1000); // 1 s
+}, 5000); // 5 s
