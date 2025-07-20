@@ -7,7 +7,7 @@ async function getApiIssues(
     query = 'state:open sort:created-desc type:issue',
     page = 1
 ) {
-    const rateLimitInfo = await browser.storage.local.get(['wrongToken', 'rateLimitRemaining', 'rateLimitReset'])
+    const rateLimitInfo = await chrome.storage.local.get(['wrongToken', 'rateLimitRemaining', 'rateLimitReset'])
     let wrongToken = rateLimitInfo.wrongToken;
     let rateLimitRemaining = rateLimitInfo.rateLimitRemaining;
     let rateLimitReset = rateLimitInfo.rateLimitReset;
@@ -15,14 +15,14 @@ async function getApiIssues(
 
     // Stop if rate limit is reached or wrong token
     if (wrongToken === true) {
-        console.warn('Rate limit is too low, change token');
+        console.debug('Rate limit is too low, change token');
         return [];
     } else if (rateLimitRemaining <= 5) {
         const resetTime = new Date(rateLimitReset * 1000);
         if (resetTime <= new Date()) {
-            console.warn('Rate limit reached, but reset time has passed. Fetching data...');
+            console.debug('Rate limit reached, but reset time has passed. Fetching data...');
         } else {
-            console.warn('Rate limit reached, waiting for reset time...');
+            console.debug('Rate limit reached, waiting for reset time...');
             return [];
         }
     }
@@ -63,7 +63,7 @@ async function getApiIssues(
     rateLimitRemaining = parseInt(response.headers.get('X-RateLimit-Remaining'), 10);
     rateLimitReset = parseInt(response.headers.get('X-RateLimit-Reset'), 10);
 
-    browser.storage.local.set({
+    chrome.storage.local.set({
         wrongToken,
         rateLimitRemaining,
         rateLimitReset
@@ -81,7 +81,7 @@ async function getApiIssues(
     }));
     return combinedData.filter(issue => {
         if (!issue.body || issue.body.trim() === '') {
-            console.warn(`Issue #${issue.number} has no body, skipping...`);
+            console.debug(`Issue #${issue.number} has no body, skipping...`);
             return false;
         }
         return true;
@@ -119,7 +119,7 @@ function getSingleIssueBody() {
 
     const allTaskCount = openTaskCount + completedTaskCount;
     if (allTaskCount === 0) {
-        console.warn('No tasks found in issue body');
+        console.debug('No tasks found in issue body');
         return null;
     }
     const progress = (completedTaskCount / allTaskCount) * 100;
@@ -148,10 +148,10 @@ function getSearchFilters() {
         const query = match[1];
         const filters = decodeURIComponent(query).split(' ');
         filters.push('type:issue');
-        console.debug(`Search filters found in URL: ${filters}`);
+        //console.debug(`Search filters found in URL: ${filters}`);
         return filters.filter(filter => !filter.startsWith('is:')).join(" ");
     } else {
-        console.warn('No search filters found in URL');
+        console.debug('No search filters found in URL');
     }
     return 'state:open sort:created-desc type:issue';
 }
@@ -176,7 +176,7 @@ function processIssues(issues) {
         const completedTaskCount = (issue.body.match(/^- \[x\]/gm) || []).length;
         const allTaskCount = openTaskCount + completedTaskCount;
         if (allTaskCount === 0) {
-            console.warn(`No tasks found in issue #${issue.number}`);
+            console.debug(`No tasks found in issue #${issue.number}`);
             continue;
         }
         const progress = (completedTaskCount / allTaskCount) * 100;
@@ -216,7 +216,7 @@ function createProgressCircleSVG(strokeDashoffset) {
 }
 
 function processWebIssues(apiData) {
-    browser.storage.local.get('completedIcon').then((data) => {
+    chrome.storage.local.get('completedIcon').then((data) => {
         const completedIcon = data.completedIcon !== undefined ? data.completedIcon : true;
         const issueNodes = document.querySelectorAll("li[role='listitem']");
         issueNodes.forEach((issue) => {
@@ -231,7 +231,7 @@ function processWebIssues(apiData) {
             const apiIssueData = apiData[parsedNumber];
 
             if (!apiIssueData) {
-                console.warn(`No API data for: ${issueNumber}`);
+                console.debug(`No API data for: ${issueNumber}`);
                 return;
             }
 
@@ -250,13 +250,13 @@ function processWebIssues(apiData) {
                     oldSvgDiv.innerHTML = "";
                     const imgElement = document.createElement("img");
                     imgElement.className = "tickback-svg-img";
-                    imgElement.src = browser.runtime.getURL("icons/iconoir/check-circle.svg");
+                    imgElement.src = chrome.runtime.getURL("icons/iconoir/check-circle.svg");
                     oldSvgDiv.appendChild(imgElement);
                 } else if (oldSvgDiv) {
                     oldSvgDiv.innerHTML = "";
                     oldSvgDiv.appendChild(createProgressCircleSVG(strokeDashoffset));
                 }
-                console.debug(`Updated ${issueNumber}: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
+                //console.debug(`Updated ${issueNumber}: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
                 return;
             }
 
@@ -278,7 +278,7 @@ function processWebIssues(apiData) {
             if (completedIcon && completedTaskCount === allTaskCount) {
                 const imgElement = document.createElement("img");
                 imgElement.className = "tickback-svg-img";
-                imgElement.src = browser.runtime.getURL("icons/iconoir/check-circle.svg");
+                imgElement.src = chrome.runtime.getURL("icons/iconoir/check-circle.svg");
                 svgDiv.appendChild(imgElement);
             } else {
                 svgDiv.appendChild(createProgressCircleSVG(strokeDashoffset));
@@ -289,13 +289,13 @@ function processWebIssues(apiData) {
             counterDiv.appendChild(counterBorder);
             trailingBadgesContainer.prepend(counterDiv);
 
-            console.debug(`${issueNumber} - tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
+            //console.debug(`${issueNumber} - tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
         });
     });
 }
 
 function processOneIssue(apiData, issueNumber) {
-    browser.storage.local.get(['completedIcon', 'incompleteIcon']).then((data) => {
+    chrome.storage.local.get(['completedIcon', 'incompleteIcon']).then((data) => {
         const completedIcon = data.completedIcon !== undefined ? data.completedIcon : true;
         const incompleteIcon = data.incompleteIcon !== undefined ? data.incompleteIcon : true;
         const issueMetadata = document.querySelector('div[data-testid="issue-metadata-fixed"]');
@@ -304,10 +304,10 @@ function processOneIssue(apiData, issueNumber) {
         const issueScrollDivForBadge = issueScrollMetadata.children[0].children[0].children[1].children[1];
 
         if (!issueDivForBadge) {
-            console.warn(`No issue metadata found for issue #${issueNumber}`);
+            console.debug(`No issue metadata found for issue #${issueNumber}`);
             return;
         } else if (!issueScrollDivForBadge) {
-            console.warn(`No issue scroll metadata found for issue #${issueNumber}`);
+            console.debug(`No issue scroll metadata found for issue #${issueNumber}`);
             return;
         }
 
@@ -322,12 +322,12 @@ function processOneIssue(apiData, issueNumber) {
             if (completedIcon && completedTaskCount === allTaskCount) {
                 const imgElement = document.createElement("img");
                 imgElement.className = className;
-                imgElement.src = browser.runtime.getURL("icons/iconoir/check-circle.svg");
+                imgElement.src = chrome.runtime.getURL("icons/iconoir/check-circle.svg");
                 targetDiv.appendChild(imgElement);
             } else if (incompleteIcon && completedTaskCount === 0) {
                 const imgElement = document.createElement("img");
                 imgElement.className = className;
-                imgElement.src = browser.runtime.getURL("icons/iconoir/task-list.svg");
+                imgElement.src = chrome.runtime.getURL("icons/iconoir/task-list.svg");
                 targetDiv.appendChild(imgElement);
             } else {
                 targetDiv.appendChild(createProgressCircleSVG(strokeDashoffset));
@@ -418,12 +418,12 @@ function processOneIssue(apiData, issueNumber) {
         }
 
         if (updated) {
-            console.debug(`Updated existing issue counter - tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
+            //console.debug(`Updated existing issue counter - tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
             return;
         }
 
         observeIssueBodyChanges(issueNumber);
-        console.debug(`Single issue: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
+        //console.debug(`Single issue: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
     });
 }
 
@@ -450,16 +450,16 @@ function observeIssueBodyChanges(issueNumber) {
 // Issues page fetch
 function loadIssuesPage() {
     insertCSS('issues');
-    browser.storage.local.get('token').then((result) => {
+    chrome.storage.local.get('token').then((result) => {
         const token = result.token;
         if (token) {
             const { owner, repo } = getRepInfo();
             getApiIssues(token, owner, repo, getSearchFilters(), getPageNumber()).then((apiIssues) => {
                 if (apiIssues && apiIssues.length > 0) {
-                    console.debug('Issues retrieved from API:', apiIssues.length);
+                    //console.debug('Issues retrieved from API:', apiIssues.length);
                     processWebIssues(processIssues(apiIssues));
                 } else {
-                    console.warn('No issues found or empty response');
+                    console.debug('No issues found or empty response');
                 }
             }).catch((error) => {
                 console.error('Error fetching issues:', error);
@@ -476,7 +476,7 @@ function loadSingleIssue(issueNumber) {
     try {
         const processedData = getSingleIssueBody();
         if (!processedData) {
-            console.warn(`No task list found in issue #${issueNumber} body`);
+            console.debug(`No task list found in issue #${issueNumber} body`);
             return;
         }
         processOneIssue(processedData, issueNumber);
@@ -492,7 +492,7 @@ function insertCSS(name) {
     }
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = browser.runtime.getURL(`styles/${name}.css`);
+    link.href = chrome.runtime.getURL(`styles/${name}.css`);
     link.id = `tickback-${name}-link`;
     document.head.appendChild(link);
 }
@@ -500,18 +500,14 @@ function insertCSS(name) {
 // match "/issues" and "/issues/"
 const regexIssuesPage = /\/issues\/?$/;
 if (regexIssuesPage.test(document.location.pathname)) {
-    document.addEventListener('DOMContentLoaded', () => {
-        loadIssuesPage();
-    });
+    loadIssuesPage();
 }
 
 // match "/issue/12" and "/issue/12/"
 const regexIssuePage = /\/issues\/(\d+)\/?$/;
 if (regexIssuePage.test(document.location.pathname)) {
     const issueNumber = regexIssuePage.exec(document.location.pathname)[1];
-    document.addEventListener('DOMContentLoaded', () => {
-        loadSingleIssue(issueNumber);
-    });
+    loadSingleIssue(issueNumber);
 }
 
 // Check for GitHub progress bar removal

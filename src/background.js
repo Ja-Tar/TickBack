@@ -1,10 +1,10 @@
 // Background script
 
-browser.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(() => {
     console.info("TickBack extension installed");
-    browser.storage.local.get('token').then((result) => {
+    chrome.storage.local.get('token').then((result) => {
         if (!result.token) {
-            browser.runtime.openOptionsPage();
+            chrome.runtime.openOptionsPage();
         }
     });
 });

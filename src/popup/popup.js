@@ -31,7 +31,7 @@ function setProgressBarColor(value) {
 }
 
 function updateProgressBar() {
-    browser.storage.local.get(['rateLimitRemaining', 'rateLimitReset', 'token', 'wrongToken']).then((data) => {
+    chrome.storage.local.get(['rateLimitRemaining', 'rateLimitReset', 'token', 'wrongToken']).then((data) => {
         const resetDiv = document.getElementById('rateLimitResetDiv');
         const infoDiv = document.getElementById('infoDiv');
         const token = data.token;
@@ -54,7 +54,7 @@ function updateProgressBar() {
 
         if (rateLimitRemaining === undefined) {
             rateLimitRemaining = 5000; // Default value if not set
-            browser.storage.local.set({ rateLimitRemaining: 5000 });
+            chrome.storage.local.set({ rateLimitRemaining: 5000 });
             resetDiv.style.color = 'transparent';
         }
 
@@ -69,7 +69,7 @@ function updateProgressBar() {
             const now = new Date();
             if (resetTime < now) {
                 resetDiv.style.color = 'transparent';
-                browser.storage.local.set({ rateLimitRemaining: 100 });
+                chrome.storage.local.set({ rateLimitRemaining: 5000, rateLimitReset: undefined });
             } else {
                 resetSpan.innerText = resetTime.toLocaleString();
                 resetDiv.style.color = 'inherit';
@@ -81,4 +81,4 @@ function updateProgressBar() {
 updateProgressBar();
 setInterval(() => {
     updateProgressBar();
-}, 1000); // 1 s
+}, 5000); // 5 s

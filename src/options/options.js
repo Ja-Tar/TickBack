@@ -2,7 +2,7 @@
 document.getElementById("save-token").addEventListener("click", () => {
     const token = document.getElementById("token").value;
     if (token) {
-        browser.storage.local.set({ token, wrongToken: false, rateLimitRemaining: 5000 }, () => {
+        chrome.storage.local.set({ token, wrongToken: false, rateLimitRemaining: 5000 }, () => {
             showMessage(0, "Token saved successfully.");
         });
     } else {
@@ -12,7 +12,7 @@ document.getElementById("save-token").addEventListener("click", () => {
 
 document.getElementById("get-token").addEventListener("click", () => {
     // open new tab to github token page
-    browser.tabs.create({
+    chrome.tabs.create({
         url: "https://github.com/settings/tokens/new?description=TickBack&scopes=repo&default_expires_at=none"
     });
 });
@@ -32,16 +32,16 @@ function showMessage(type, message) {
 
 document.getElementById("incomplete-icon-checkbox").addEventListener("change", function() {
     const isChecked = this.checked;
-    browser.storage.local.set({ incompleteIcon: isChecked });
+    chrome.storage.local.set({ incompleteIcon: isChecked });
 });
 
 document.getElementById("completed-icon-checkbox").addEventListener("change", function() {
     const isChecked = this.checked;
-    browser.storage.local.set({ completedIcon: isChecked });
+    chrome.storage.local.set({ completedIcon: isChecked });
 });
 
 document.getElementById("reset-customization").addEventListener("click", () => {
-    browser.storage.local.set({
+    chrome.storage.local.set({
         incompleteIcon: true,
         completedIcon: true
     }).then(() => {
@@ -52,7 +52,7 @@ document.getElementById("reset-customization").addEventListener("click", () => {
 
 document.addEventListener("DOMContentLoaded", () => {
     // Load customization options
-    browser.storage.local.get(["incompleteIcon", "completedIcon"]).then((data) => {
+    chrome.storage.local.get(["incompleteIcon", "completedIcon"]).then((data) => {
         document.getElementById("incomplete-icon-checkbox").checked = data.incompleteIcon !== undefined ? data.incompleteIcon : true;
         document.getElementById("completed-icon-checkbox").checked = data.completedIcon !== undefined ? data.completedIcon : true;
     });
