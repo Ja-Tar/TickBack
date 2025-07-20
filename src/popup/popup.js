@@ -67,7 +67,7 @@ function updateProgressBar() {
 
         const percentageSpan = document.getElementById('rateLimitValue');
         const limitRemaining = Math.round((rateLimitRemaining / 5000) * 100);
-        progressBar.value = limitRemaining;
+        progressBar.value = rateLimitRemaining;
         percentageSpan.textContent = `${limitRemaining}%`;
 
         if (rateLimitReset !== undefined && rateLimitRemaining !== undefined) {
