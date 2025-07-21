@@ -1,8 +1,8 @@
 const tokenStatusText = {
-    0: "Token is valid",
-    1: "GitHub token NOT set",
-    2: "GitHub token is invalid",
-    3: "Rate limit reached"
+    0: "GitHub token is NOT set",
+    1: "GitHub token is invalid",
+    2: "Rate limit reached",
+    99: "Token is valid"
 };
 
 // observe the progress bar for changes
@@ -41,16 +41,11 @@ function updateProgressBar() {
     browser.storage.local.get(['rateLimitRemaining', 'rateLimitReset', 'tokenStatus']).then((data) => {
         const resetDiv = document.getElementById('rateLimitResetDiv');
         const infoDiv = document.getElementById('infoDiv');
-        let tokenStatus = data.tokenStatus;
+        const tokenStatus = data.tokenStatus ?? 0;
         let rateLimitRemaining = data.rateLimitRemaining;
         const rateLimitReset = data.rateLimitReset;
 
-        if (tokenStatus === undefined) {
-            tokenStatus = 1;
-            browser.storage.local.set({ tokenStatus: 1, rateLimitRemaining: 0 });
-        }
-
-        if (tokenStatus === 1 || tokenStatus === 2) {
+        if (tokenStatus !== 99) {
             resetDiv.style.color = 'transparent';
             progressBar.value = 0;
             document.getElementById('rateLimitValue').textContent = '0%';
