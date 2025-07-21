@@ -8,7 +8,9 @@ const tokenStatusText = {
 // Check token status
 chrome.storage.local.get('tokenStatus').then((data) => {
     const tokenStatus = data.tokenStatus ?? 0;
-    showMessage(tokenStatus === 99 ? 0 : 1, tokenStatusText[tokenStatus]);
+    if (tokenStatus !== 99) {
+        showMessage(1, tokenStatusText[tokenStatus], 0);
+    }
 });
 
 // Save token to storage
@@ -16,7 +18,7 @@ document.getElementById("save-token").addEventListener("click", () => {
     const token = document.getElementById("token").value;
     if (token) {
         chrome.storage.local.set({ token, tokenStatus: 99, rateLimitRemaining: 5000 }, () => {
-            showMessage(0, "Token saved successfully.");
+            showMessage(0, "Token saved successfully.", 0);
         });
     } else {
         showMessage(1, "Please enter a valid token.");
@@ -31,14 +33,19 @@ document.getElementById("get-token").addEventListener("click", () => {
 });
 
 // Show message function
-function showMessage(type, message) {
+function showMessage(type, message, duration = 3000) {
+    if (!message) return;
     const messageElement = document.getElementById("message");
+    const oldMessage = duration ? messageElement.textContent : "";
+    const oldClass = duration ? messageElement.className : "";
     messageElement.textContent = message;
     messageElement.className = type === 0 ? "success" : "error";
-    setTimeout(() => {
-        messageElement.textContent = "";
-        messageElement.className = "";
-    }, 3000);
+    if (duration && duration > 0) {
+        setTimeout(() => {
+            messageElement.textContent = oldMessage;
+            messageElement.className = oldClass;
+        }, duration);
+    }
 }
 
 // Customization options
