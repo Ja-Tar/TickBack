@@ -50,7 +50,7 @@ function updateProgressBar() {
             progressBar.value = 0;
             document.getElementById('rateLimitValue').textContent = '0%';
             infoDiv.innerHTML = '';
-            let popupParagraph = document.createElement('p');
+            const popupParagraph = document.createElement('p');
             popupParagraph.textContent = tokenStatusText[tokenStatus];
             infoDiv.appendChild(popupParagraph);
             infoDiv.style.display = 'block';
