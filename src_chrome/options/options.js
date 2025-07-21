@@ -6,8 +6,8 @@ const tokenStatusText = {
 };
 
 // Check token status
-browser.storage.local.get('tokenStatus').then((data) => {
-    const tokenStatus = data.tokenStatus || 0;
+chrome.storage.local.get('tokenStatus').then((data) => {
+    const tokenStatus = data.tokenStatus ?? 0;
     showMessage(tokenStatus === 99 ? 0 : 1, tokenStatusText[tokenStatus]);
 });
 
