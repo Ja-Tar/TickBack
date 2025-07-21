@@ -49,7 +49,10 @@ function updateProgressBar() {
             resetDiv.style.color = 'transparent';
             progressBar.value = 0;
             document.getElementById('rateLimitValue').textContent = '0%';
-            infoDiv.innerHTML = `<p>${tokenStatusText[tokenStatus]}</p>`;
+            infoDiv.innerHTML = '';
+            let popupParagraph = document.createElement('p');
+            popupParagraph.textContent = tokenStatusText[tokenStatus];
+            infoDiv.appendChild(popupParagraph);
             infoDiv.style.display = 'block';
             return;
         }
