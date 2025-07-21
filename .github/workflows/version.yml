@@ -17,9 +17,13 @@ jobs:
       - name: "Checkout repository"
         uses: actions/checkout@v4
 
-      - name: "Update version in manifest.json"
+      - name: "Update version in firefox manifest"
         run: |
           jq --arg v "${{ github.event.inputs.new_version }}" '.version = $v' src/manifest.json > manifest.tmp && mv manifest.tmp src/manifest.json
+
+      - name: "Update version in chrome manifest"
+        run: |
+          jq --arg v "${{ github.event.inputs.new_version }}" '.version = $v' src_chrome/manifest.json > manifest_chrome.tmp && mv manifest_chrome.tmp src_chrome/manifest.json
 
       - name: "Commit and push changes"
         uses: stefanzweifel/git-auto-commit-action@v6
