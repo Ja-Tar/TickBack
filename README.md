@@ -30,3 +30,7 @@ Simple browser add-on for GitHub to add back the tasks count on issues page.
 2. Enter your GitHub Personal Access Token (PAT) in the settings page (if you want to use the API features).
 3. Configure the extension settings according to your preferences.
 4. Now everything should work as expected.
+
+# Known issues
+
+- [#17](https://github.com/Ja-Tar/TickBack/issues/17) - Using (while searching for issues) AND / OR operator couses extention to not work properly. Currently not fixable.
