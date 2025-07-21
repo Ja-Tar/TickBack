@@ -15,7 +15,7 @@ browser.storage.local.get('tokenStatus').then((data) => {
 document.getElementById("save-token").addEventListener("click", () => {
     const token = document.getElementById("token").value;
     if (token) {
-        browser.storage.local.set({ token, tokenStatus: 0, rateLimitRemaining: 5000 }, () => {
+        browser.storage.local.set({ token, tokenStatus: 99, rateLimitRemaining: 5000 }, () => {
             showMessage(0, "Token saved successfully.");
         });
     } else {
