@@ -1,8 +1,8 @@
 const tokenStatusText = {
-    0: "Token is valid",
-    1: "Token is not set",
-    2: "Token is invalid",
-    3: "Rate limit reached"
+    0: "Token is not set",
+    1: "Token is invalid",
+    2: "Rate limit reached",
+    99: "Token is valid"
 };
 
 // Main script
@@ -15,12 +15,12 @@ async function getApiIssues(
     page = 1
 ) {
     const rateLimitInfo = await chrome.storage.local.get(['tokenStatus', 'rateLimitRemaining', 'rateLimitReset'])
-    let tokenStatus = rateLimitInfo.tokenStatus; // 0 = valid, 1 = not set, 2 = invalid, 3 = rate limited
+    let tokenStatus = rateLimitInfo.tokenStatus; // 0 = not set, 1 = invalid, 2 = rate limited, 99 = valid
     let rateLimitRemaining = rateLimitInfo.rateLimitRemaining;
     let rateLimitReset = rateLimitInfo.rateLimitReset;
     let after = "";
 
-    if (tokenStatus !== 0) {
+    if (tokenStatus !== 99) {
         console.warn(`Token status: ${tokenStatusText[tokenStatus]}`);
         return [];
     } else if (rateLimitRemaining <= 5) {
@@ -64,7 +64,7 @@ async function getApiIssues(
 
     // Check for rate limit headers
     if (data.message?.includes("Bad credentials")) {
-        tokenStatus = 2; // Invalid token
+        tokenStatus = 1; // Invalid token
         console.warn('Invalid token detected');
     }
     rateLimitRemaining = parseInt(response.headers.get('X-RateLimit-Remaining'), 10);

@@ -1,8 +1,21 @@
+const tokenStatusText = {
+    0: "Token is not set",
+    1: "Saved token is invalid",
+    2: "Rate limit reached",
+    99: "Saved token is valid"
+};
+
+// Check token status
+browser.storage.local.get('tokenStatus').then((data) => {
+    const tokenStatus = data.tokenStatus || 0;
+    showMessage(tokenStatus === 99 ? 0 : 1, tokenStatusText[tokenStatus]);
+});
+
 // Save token to storage
 document.getElementById("save-token").addEventListener("click", () => {
     const token = document.getElementById("token").value;
     if (token) {
-        chrome.storage.local.set({ token, tokenStatus: 0, rateLimitRemaining: 5000 }, () => {
+        chrome.storage.local.set({ token, tokenStatus: 99, rateLimitRemaining: 5000 }, () => {
             showMessage(0, "Token saved successfully.");
         });
     } else {
