@@ -559,7 +559,7 @@ observer.observe(document, {
 // Add event listener for going back in history
 window.addEventListener('popstate', () => {
     //console.log('History changed');
-    if (document.location.pathname.endsWith('/issues') || document.location.pathname.endsWith('/issues/')) {
+    if (regexIssuesPage.test(document.location.pathname)) {
         setTimeout(() => {
             loadIssuesPage();
         }, 2000);
