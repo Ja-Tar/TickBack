@@ -57,6 +57,9 @@ jobs:
     steps:
       - name: "Checkout"
         uses: actions/checkout@v4
+      
+      - name: "Run reformat from firefox to chrome"
+        run: python3 reformat_firefox_to_chrome.py
 
       - name: "Make zip"
         run: |
