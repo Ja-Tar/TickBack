@@ -1,12 +1,23 @@
 name: "Build"
 on:
   workflow_dispatch:
-  
+    inputs:
+      firefox:
+        description: "Build Firefox extension"
+        type: boolean
+        required: false
+        default: true
+      chrome:
+        description: "Build Chrome extension"
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   build:
     name: "Build"
     runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.firefox == 'true' }}
     steps:
       - name: "Checkout"
         uses: actions/checkout@v4
@@ -25,3 +36,20 @@ jobs:
         with:
           name: target.xpi
           path: ${{ steps.web-ext-build.outputs.target }}
+  build_chrome:
+    name: "Build Chrome"
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.chrome == 'true' }}
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Run reformat from firefox to chrome"
+        run: python3 .github/scripts/reformat_firefox_to_chrome.py
+
+      - name: "Upload Artifact"
+        uses: actions/upload-artifact@v4
+        with:
+          name: TickBack-${{ github.run_number }}
+          path: src_chrome/
+      
