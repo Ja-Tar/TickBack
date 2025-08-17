@@ -5,14 +5,14 @@
 Simple browser add-on for GitHub to add back the tasks count on issues page.
 
 [<img width="172" height="60" alt="get-the-addon-178x60px dad84b42" src="https://github.com/user-attachments/assets/0b563b99-f3fd-4fa2-85c9-c6bf5e81f51c" />](https://addons.mozilla.org/pl/firefox/addon/tickback)
-
+[<img height="60" alt="get-the-addon-178x60px dad84b42" src="https://github.com/user-attachments/assets/b16734cd-741f-4b34-9b5e-74c1cc256d20" />](https://chromewebstore.google.com/detail/ehjcinhljepmpdlipppnhbamhhoidafk?utm_source=item-github-page)
 ---
 
 <img src="https://github.com/user-attachments/assets/d666c9f3-7ce8-4ed9-8e71-948ed3c15d8f" alt="drawing" width="500"/>
 
 ## Project Status
 
-- [ ] Chrome version
+- [x] Chrome version
 - [x] Show tasks count on the issues page (__API token is required!__)
     - [x] Working search filters
 - [x] Show tasks count on the single issue page 
