@@ -5,6 +5,12 @@ const tokenStatusText = {
     99: "Token is valid"
 };
 
+const icons = {
+    check: browser.runtime.getURL("icons/iconoir/check-circle.svg"),
+    list: browser.runtime.getURL("icons/iconoir/task-list.svg"),
+    error: browser.runtime.getURL("icons/iconoir/warning-triangle.svg")
+};
+
 // Main script
 
 async function getApiIssues(
@@ -192,7 +198,7 @@ function processIssues(issues) {
     return processedIssues;
 }
 
-function createProgressCircleSVG(strokeDashoffset) {
+function appendProgressCircleSVG(targetDiv, strokeDashoffset) {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("viewBox", "0 0 20 20");
     svg.style.transform = "rotate(-90deg)";
@@ -219,7 +225,7 @@ function createProgressCircleSVG(strokeDashoffset) {
     svg.appendChild(backgroundCircle);
     svg.appendChild(progressCircle);
 
-    return svg;
+    targetDiv.appendChild(svg);
 }
 
 function processWebIssues(apiData) {
@@ -255,13 +261,10 @@ function processWebIssues(apiData) {
                 const oldSvgDiv = document.getElementById(`tickback-svg-div-${parsedNumber}`);
                 if (completedIcon && completedTaskCount === allTaskCount) {
                     oldSvgDiv.innerHTML = "";
-                    const imgElement = document.createElement("img");
-                    imgElement.className = "tickback-svg-img";
-                    imgElement.src = browser.runtime.getURL("icons/iconoir/check-circle.svg");
-                    oldSvgDiv.appendChild(imgElement);
+                    appendIcon("tickback-svg-img", oldSvgDiv, icons.check);
                 } else if (oldSvgDiv) {
                     oldSvgDiv.innerHTML = "";
-                    oldSvgDiv.appendChild(createProgressCircleSVG(strokeDashoffset));
+                    appendProgressCircleSVG(oldSvgDiv, strokeDashoffset);
                 }
                 //console.debug(`Updated ${issueNumber}: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
                 return;
@@ -283,12 +286,9 @@ function processWebIssues(apiData) {
             svgDiv.id = `tickback-svg-div-${parsedNumber}`;
             svgDiv.className = "tickback-svg-div tickback-issues";
             if (completedIcon && completedTaskCount === allTaskCount) {
-                const imgElement = document.createElement("img");
-                imgElement.className = "tickback-svg-img";
-                imgElement.src = browser.runtime.getURL("icons/iconoir/check-circle.svg");
-                svgDiv.appendChild(imgElement);
+                appendIcon("tickback-svg-img", svgDiv, icons.check);
             } else {
-                svgDiv.appendChild(createProgressCircleSVG(strokeDashoffset));
+                appendProgressCircleSVG(svgDiv, strokeDashoffset);
             }
 
             counterBorder.appendChild(svgDiv);
@@ -327,17 +327,11 @@ function processOneIssue(apiData, issueNumber) {
         function setProgressIcon(targetDiv, className) {
             targetDiv.innerHTML = "";
             if (completedIcon && completedTaskCount === allTaskCount) {
-                const imgElement = document.createElement("img");
-                imgElement.className = className;
-                imgElement.src = browser.runtime.getURL("icons/iconoir/check-circle.svg");
-                targetDiv.appendChild(imgElement);
+                appendIcon(className, targetDiv, icons.check);
             } else if (incompleteIcon && completedTaskCount === 0) {
-                const imgElement = document.createElement("img");
-                imgElement.className = className;
-                imgElement.src = browser.runtime.getURL("icons/iconoir/task-list.svg");
-                targetDiv.appendChild(imgElement);
+                appendIcon(className, targetDiv, icons.list);
             } else {
-                targetDiv.appendChild(createProgressCircleSVG(strokeDashoffset));
+                appendProgressCircleSVG(targetDiv, strokeDashoffset);
             }
         }
 
@@ -432,6 +426,13 @@ function processOneIssue(apiData, issueNumber) {
         observeIssueBodyChanges(issueNumber);
         //console.debug(`Single issue: tasks: ${allTaskCount}, completed: ${completedTaskCount}, progress: ${progress.toFixed(2)}%`);
     });
+}
+
+function appendIcon(className, targetDiv, iconSrc) {
+    const imgElement = document.createElement("img");
+    imgElement.className = className;
+    imgElement.src = iconSrc;
+    targetDiv.appendChild(imgElement);
 }
 
 // Observe changes in the issue body to reload the issue when task list changes
