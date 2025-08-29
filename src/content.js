@@ -8,7 +8,8 @@ const tokenStatusText = {
 const icons = {
     check: browser.runtime.getURL("icons/iconoir/check-circle.svg"),
     list: browser.runtime.getURL("icons/iconoir/task-list.svg"),
-    error: browser.runtime.getURL("icons/iconoir/warning-triangle.svg")
+    error: browser.runtime.getURL("icons/iconoir/warning-triangle.svg"),
+    empty: browser.runtime.getURL("icons/iconoir/empty.svg")
 };
 
 // Main script
@@ -245,6 +246,7 @@ function processWebIssues(apiData) {
 
             if (!apiIssueData) {
                 console.debug(`No API data for: ${issueNumber}`);
+                // TODO If error display warning icon or if none display empty icon
                 return;
             }
 
