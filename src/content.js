@@ -179,8 +179,8 @@ function processIssues(issues) {
     const processedIssues = {};
     for (let i = 0; i < issues.length; i++) {
         const issue = issues[i];
-        const openTaskCount = (issue.body.match(/^- \[ \]/gm) || []).length;
-        const completedTaskCount = (issue.body.match(/^- \[x\]/gm) || []).length;
+        const openTaskCount = (issue.body.match(/^- \[ ]/gm) || []).length;
+        const completedTaskCount = (issue.body.match(/^- \[x]/gm) || []).length;
         const allTaskCount = openTaskCount + completedTaskCount;
         if (allTaskCount === 0) {
             console.debug(`No tasks found in issue #${issue.number}`);
@@ -492,6 +492,15 @@ function loadSingleIssue(issueNumber) {
     }
 }
 
+async function checkForLoadedItems() {
+    if (document.querySelector("ul>li.task-list-item>input")) {
+        await new Promise(resolve => {
+            setTimeout(resolve, 500);
+        })
+        await checkForLoadedItems()
+    }
+}
+
 function insertCSS(name) {
     if (document.getElementById(`tickback-${name}-link`)) {
         //console.debug(`Link exists: ${name}`);
@@ -514,7 +523,7 @@ if (regexIssuesPage.test(document.location.pathname)) {
 const regexIssuePage = /\/issues\/(\d+)\/?$/;
 if (regexIssuePage.test(document.location.pathname)) {
     const issueNumber = regexIssuePage.exec(document.location.pathname)[1];
-    loadSingleIssue(issueNumber);
+    checkForLoadedItems().then(() => loadSingleIssue(issueNumber));
 }
 
 // Check for GitHub progress bar removal
@@ -537,7 +546,7 @@ const observer = new MutationObserver((mutations) => {
                     }, 1000);
                 }
             }
-        } else if (mutation.type === 'childList' && mutation.addedNodes[0]?.id === 'issue-body-viewer') {
+        } else if (mutation.type === 'childList' && mutation.addedNodes[0]?.className.includes('issueViewerContainer')) {
             if (regexIssuePage.test(document.location.pathname)) {
                 const issueNumber = regexIssuePage.exec(document.location.pathname)[1];
                 setTimeout(() => {
