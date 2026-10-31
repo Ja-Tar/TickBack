@@ -478,7 +478,8 @@ function loadIssuesPage() {
 }
 
 // Single issue fetch
-function loadSingleIssue(issueNumber) {
+async function loadSingleIssue(issueNumber) {
+    if (await checkForLoadedItems()) return;
     insertCSS('issues');
     try {
         const processedData = getSingleIssueBody();
@@ -492,12 +493,25 @@ function loadSingleIssue(issueNumber) {
     }
 }
 
+let waiting = false;
+
 async function checkForLoadedItems() {
-    if (document.querySelector("ul>li.task-list-item>input")) {
-        await new Promise(resolve => {
-            setTimeout(resolve, 500);
-        })
-        await checkForLoadedItems()
+    console.log("Task check");
+    if (waiting) return true;
+    console.log("Waiting for task list");
+    waiting = true;
+    await waitForChange();
+    waiting = false;
+    return false;
+}
+
+async function waitForChange() {
+    await new Promise(resolve => {
+        setTimeout(resolve, 500);
+    })
+    if (!document.querySelector("ul>li.base-task-list-item div[class*='base-list-item'] input")) {
+        console.log("Waiting...");
+        await waitForChange()
     }
 }
 
@@ -523,17 +537,17 @@ if (regexIssuesPage.test(document.location.pathname)) {
 const regexIssuePage = /\/issues\/(\d+)\/?$/;
 if (regexIssuePage.test(document.location.pathname)) {
     const issueNumber = regexIssuePage.exec(document.location.pathname)[1];
-    checkForLoadedItems().then(() => loadSingleIssue(issueNumber));
+    loadSingleIssue(issueNumber);
 }
 
 // Check for GitHub progress bar removal
 
 const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
+    mutations.forEach(({addedNodes: [first], removedNodes: [firstrm], target, type}) => {
         //console.log('HTML changed', mutation, mutation.target.nodeName);
-        if (mutation.target.nodeName === 'HTML' && mutation.type === 'childList') {
+        if (target.nodeName === 'HTML' && type === 'childList') {
             // div.turbo-progress-bar
-            if (mutation.removedNodes[0]?.classList.contains('turbo-progress-bar')) {
+            if (firstrm?.classList.contains('turbo-progress-bar')) {
                 //console.log('Turbo progress bar removed');
                 if (regexIssuesPage.test(document.location.pathname)) {
                     setTimeout(() => {
@@ -541,18 +555,23 @@ const observer = new MutationObserver((mutations) => {
                     }, 1000);
                 } else if (regexIssuePage.test(document.location.pathname)) {
                     const issueNumber = regexIssuePage.exec(document.location.pathname)[1];
-                    setTimeout(() => {
-                        loadSingleIssue(issueNumber);
-                    }, 1000);
+                    loadSingleIssue(issueNumber);
                 }
             }
-        } else if (mutation.type === 'childList' && mutation.addedNodes[0]?.className.includes('issueViewerContainer')) {
-            if (regexIssuePage.test(document.location.pathname)) {
-                const issueNumber = regexIssuePage.exec(document.location.pathname)[1];
-                setTimeout(() => {
+        } else if (type === 'childList') {
+            if (first?.nodeName === "DIV" &&
+                (first?.className.includes('issueViewerContainer') ||
+                first?.id === 'issue-body-viewer')) {
+                if (regexIssuePage.test(document.location.pathname)) {
+                    const issueNumber = regexIssuePage.exec(document.location.pathname)[1];
                     loadSingleIssue(issueNumber);
+                }
+            }
+            if (firstrm?.nodeName === "DIV" && firstrm.className.includes('editorWrapper')) {
+                if (regexIssuePage.test(document.location.pathname)) {
+                    const issueNumber = regexIssuePage.exec(document.location.pathname)[1];
                     observeIssueBodyChanges(issueNumber);
-                }, 1000);
+                }
             }
         }
     });
