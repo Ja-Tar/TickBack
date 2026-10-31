@@ -3,3 +3,4 @@ src_chrome/*
 !src_chrome/LICENSE
 !src_chrome/manifest.json
 !src_chrome/popup/popup.html
+/.idea/jsLinters/jshint.xml
